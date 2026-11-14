@@ -58,8 +58,14 @@ PC 앱 메인 화면에 경고가 뜨면 이 경우예요.
 
 ### 처음 한 번: 방화벽
 
-처음 실행할 때 Windows 방화벽 창이 뜨면 **개인 네트워크**를 허용하세요.
-폰에서 접속이 안 되면:
+PC 앱을 **관리자 권한**으로 실행하면, 켤 때마다 방화벽에 "Phone Controller" 규칙을 자동으로 추가해요 (같은 공유기 안의 기기만 허용).
+관리자 권한이 아니면 자동으로 못 여니까, 관리자 PowerShell에서 한 번 직접 실행하세요:
+
+```
+netsh advfirewall firewall add rule name="Phone Controller" dir=in action=allow protocol=TCP localport=8080 remoteip=localsubnet profile=any
+```
+
+폰에서 페이지가 하얀 화면으로 로딩만 하다 멈추면 거의 방화벽 문제예요. 그래도 안 되면:
 
 - Wi‑Fi 연결이 "공용 네트워크"로 되어 있으면 "개인 네트워크"로 바꾸기
 - 공유기의 "AP 격리 / 클라이언트 격리" 기능 끄기

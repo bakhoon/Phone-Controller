@@ -26,6 +26,8 @@ export interface HostState {
   rtt: number | null;
   inputAvailable: boolean;
   isAdmin: boolean;
+  /** Windows Firewall rule added (null = not checked / not Windows). */
+  firewallOk: boolean | null;
   platform: string;
 }
 

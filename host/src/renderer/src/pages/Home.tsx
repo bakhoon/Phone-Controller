@@ -55,6 +55,12 @@ export function Home({ state, stream, onNavigate }: Props) {
             게임이 관리자 권한으로 실행 중이면 입력이 안 들어갈 수 있어요. 이 프로그램도 "관리자 권한으로 실행"해 주세요.
           </div>
         )}
+        {state.firewallOk === false && (
+          <div className="notice warn" style={{ maxWidth: 520, width: '100%' }}>
+            <IconWarn />
+            방화벽을 자동으로 열지 못했어요. 폰에서 접속이 안 되면 관리자 권한으로 다시 실행하거나, README의 방화벽 설정을 따라 해 주세요.
+          </div>
+        )}
         {!state.inputAvailable && (
           <div className="notice warn" style={{ maxWidth: 520, width: '100%' }}>
             <IconWarn />

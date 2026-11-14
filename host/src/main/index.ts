@@ -6,6 +6,7 @@ import type { HostToPhone } from '@shared/protocol';
 import { InputController } from './input';
 import { ControllerServer } from './server';
 import { lanAddresses } from './network';
+import { ensureFirewallRule } from './firewall';
 import { loadLayouts, loadSettings, saveLayouts, saveSettings, type LayoutStore, type Settings } from './store';
 import type { HostState } from '../preload/api';
 
@@ -30,6 +31,7 @@ const state: HostState = {
   rtt: null,
   inputAvailable: input.available,
   isAdmin: false,
+  firewallOk: null,
   platform: process.platform
 };
 
@@ -60,16 +62,23 @@ async function startServer(): Promise<void> {
         ? `포트 ${settings.port}을(를) 다른 프로그램이 쓰고 있어요. 세팅에서 포트를 바꿔 주세요.`
         : `서버를 시작하지 못했어요: ${e.message}`;
   }
+  // Let the phone through Windows Firewall (needs admin rights).
+  if (process.platform === 'win32') {
+    state.firewallOk = state.isAdmin ? await ensureFirewallRule(settings.port) : false;
+  }
   await refreshAddress();
   pushState();
 }
 
-function checkAdmin(): void {
-  if (process.platform !== 'win32') return;
+function checkAdmin(): Promise<void> {
+  if (process.platform !== 'win32') return Promise.resolve();
   // "net session" only succeeds with administrator rights.
-  execFile('net', ['session'], { windowsHide: true }, (err) => {
-    state.isAdmin = !err;
-    pushState();
+  return new Promise((resolve) => {
+    execFile('net', ['session'], { windowsHide: true }, (err) => {
+      state.isAdmin = !err;
+      pushState();
+      resolve();
+    });
   });
 }
 
@@ -162,7 +171,7 @@ app.whenReady().then(async () => {
 
   registerIpc();
   createWindow();
-  checkAdmin();
+  await checkAdmin();
   await startServer();
 });
 
