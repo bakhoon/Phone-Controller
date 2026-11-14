@@ -1,0 +1,18 @@
+{
+  "name": "phone-controller",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Use an iPhone as a touch controller for a Windows PC: stream the PC screen to the phone and send key/mouse input back.",
+  "workspaces": [
+    "client",
+    "host"
+  ],
+  "scripts": {
+    "build:client": "npm run build -w client",
+    "dev": "npm run build:client && npm run dev -w host",
+    "start": "npm run build:client && npm run start -w host",
+    "typecheck": "npm run typecheck -w client && npm run typecheck -w host",
+    "build": "npm run build:client && npm run build -w host",
+    "dist": "npm run build:client && npm run dist -w host"
+  }
+}

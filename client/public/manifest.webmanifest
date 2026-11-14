@@ -1,0 +1,10 @@
+{
+  "name": "폰 컨트롤러",
+  "short_name": "컨트롤러",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#12141C",
+  "theme_color": "#12141C",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
