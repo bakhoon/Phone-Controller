@@ -9,11 +9,13 @@ import {
   type Layout,
   type PadWidget,
   type ScreenWidget,
-  type Widget
+  type StickWidget,
+  type Widget,
+  DEFAULT_STICK_KEYS
 } from '@shared/layout';
 import { KEY_OPTIONS, keyLabel } from '@shared/keys';
 import type { HostState, LayoutStore } from '../../../preload/api';
-import { IconArrows, IconBack, IconMouse, IconPad } from '../icons';
+import { IconArrows, IconBack, IconMouse, IconPad, IconStick } from '../icons';
 
 interface Props {
   store: LayoutStore;
@@ -74,7 +76,7 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
     setItems((prev) => prev.map((l, i) => (i === active ? { ...l, widgets: fn(l.widgets) } : l)));
     setDirty(true);
   };
-  const patch = (id: string, p: Partial<KeyWidget> | Partial<PadWidget> | Partial<ScreenWidget>) =>
+  const patch = (id: string, p: Partial<KeyWidget> | Partial<PadWidget> | Partial<StickWidget> | Partial<ScreenWidget>) =>
     updateWidgets((ws) => ws.map((w) => (w.id === id ? ({ ...w, ...p } as Widget) : w)));
   const add = (list: Widget[]) => {
     updateWidgets((ws) => [...ws, ...list]);
@@ -107,8 +109,9 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
     }
     const left = o.x - W / 2;
     const top = o.y - H / 2;
-    if (o.kind === 'key') {
-      const size = clamp(Math.round((o.size + Math.max(dx, dy)) / 2) * 2, 32, 150);
+    if (o.kind === 'key' || o.kind === 'stick') {
+      const [lo, hi] = o.kind === 'stick' ? [80, 240] : [32, 150];
+      const size = clamp(Math.round((o.size + Math.max(dx, dy)) / 2) * 2, lo, hi);
       patch(d.id, { size, x: left + size / 2, y: top + size / 2 });
     } else if (o.kind === 'pad') {
       const nw = clamp(snap(o.w + dx), 100, 600);
@@ -245,6 +248,30 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
           >
             <IconArrows color="var(--mint)" /> 방향키 4개
           </button>
+          <button
+            onClick={() =>
+              add([
+                {
+                  id: newId(),
+                  kind: 'stick',
+                  size: 150,
+                  x: 130,
+                  y: REF_H - 100,
+                  opacity: 0.16,
+                  eightWay: true,
+                  deadzone: 0.25,
+                  keys: { ...DEFAULT_STICK_KEYS }
+                }
+              ])
+            }
+          >
+            <IconStick color="var(--mint)" />
+            <span>
+              조이스틱
+              <br />
+              <span className="hint" style={{ fontSize: 12 }}>돌려서 8방향 이동</span>
+            </span>
+          </button>
           <button onClick={() => add([newKey('클릭', 'MouseLeft', 'circle', 70, REF_W / 2, REF_H / 2)])}>
             <IconMouse color="var(--mint)" /> 마우스 클릭
           </button>
@@ -279,7 +306,10 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
                     key={w.id}
                     w={w}
                     selected={w.id === selId}
-                    live={w.kind === 'key' && pressed.has(w.key)}
+                    live={
+                      (w.kind === 'key' && pressed.has(w.key)) ||
+                      (w.kind === 'stick' && Object.values(w.keys).some((k) => pressed.has(k)))
+                    }
                     onDown={(e) => startDrag(e, w, 'move')}
                     onHandleDown={(e) => startDrag(e, w, 'resize')}
                     onMove={onDrag}
@@ -313,6 +343,7 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
           )}
           {sel?.kind === 'key' && <KeyPanel w={sel} patch={(p) => patch(sel.id, p)} />}
           {sel?.kind === 'pad' && <PadPanel w={sel} patch={(p) => patch(sel.id, p)} />}
+          {sel?.kind === 'stick' && <StickPanel w={sel} patch={(p) => patch(sel.id, p)} />}
           {sel?.kind === 'screen' && (
             <ScreenPanel
               w={sel}
@@ -377,6 +408,21 @@ function WidgetView({ w, selected, live, onDown, onHandleDown, onMove, onUp, onF
     };
     content = w.label;
     aria = `${w.label} 버튼 (${keyLabel(w.key)})`;
+  } else if (w.kind === 'stick') {
+    faceStyle = { borderRadius: '50%', background: selected ? 'rgba(61,220,151,0.25)' : `rgba(255,255,255,${w.opacity})` };
+    const arrow = (style: CSSProperties, ch: string) => (
+      <span aria-hidden="true" style={{ position: 'absolute', fontSize: 12, color: 'rgba(255,255,255,0.6)', ...style }}>{ch}</span>
+    );
+    content = (
+      <>
+        {arrow({ top: '8%', left: '50%', transform: 'translateX(-50%)' }, '▲')}
+        {arrow({ bottom: '8%', left: '50%', transform: 'translateX(-50%)' }, '▼')}
+        {arrow({ left: '8%', top: '50%', transform: 'translateY(-50%)' }, '◀')}
+        {arrow({ right: '8%', top: '50%', transform: 'translateY(-50%)' }, '▶')}
+        <span aria-hidden="true" style={{ width: '42%', height: '42%', borderRadius: '50%', background: 'rgba(255,255,255,0.45)', border: '1.5px solid rgba(255,255,255,0.7)' }} />
+      </>
+    );
+    aria = `조이스틱 (${w.eightWay ? '8방향' : '4방향'})`;
   } else if (w.kind === 'pad') {
     faceStyle = { background: selected ? 'rgba(61,220,151,0.25)' : `rgba(255,255,255,${w.opacity})` };
     content = (
@@ -492,6 +538,53 @@ function KeyPanel({ w, patch }: { w: KeyWidget; patch: (p: Partial<KeyWidget>) =
           <button style={{ flex: 1 }} aria-pressed={w.shape === 'circle'} onClick={() => patch({ shape: 'circle' })}>원</button>
           <button style={{ flex: 1 }} aria-pressed={w.shape === 'square'} onClick={() => patch({ shape: 'square' })}>사각형</button>
         </div>
+      </div>
+    </>
+  );
+}
+
+function StickPanel({ w, patch }: { w: StickWidget; patch: (p: Partial<StickWidget>) => void }) {
+  const dirs: { d: keyof StickWidget['keys']; label: string }[] = [
+    { d: 'up', label: '위' },
+    { d: 'down', label: '아래' },
+    { d: 'left', label: '왼쪽' },
+    { d: 'right', label: '오른쪽' }
+  ];
+  return (
+    <>
+      <div className="col" style={{ gap: 4 }}>
+        <h2>조이스틱</h2>
+        <p className="hint">엄지로 끌어서 돌리면 방향키가 눌려요. 대각선은 두 키가 같이 눌려요.</p>
+      </div>
+      <Range id="stsize" label="크기" value={w.size} unit=" px" min={80} max={240} step={2} onChange={(v) => patch({ size: v })} />
+      <Toggle label="8방향" hint="끄면 위/아래/왼쪽/오른쪽 4방향만" on={w.eightWay} onChange={(v) => patch({ eightWay: v })} />
+      <Range
+        id="dead"
+        label="가운데 무반응 영역"
+        value={Math.round(w.deadzone * 100)}
+        unit="%"
+        min={5}
+        max={60}
+        onChange={(v) => patch({ deadzone: v / 100 })}
+      />
+      <div className="col" style={{ gap: 8 }}>
+        <span className="label">방향별 키</span>
+        {dirs.map(({ d, label }) => (
+          <div key={d} className="row" style={{ flexWrap: 'nowrap' }}>
+            <label htmlFor={`stk-${d}`} style={{ width: 52 }}>{label}</label>
+            <select
+              id={`stk-${d}`}
+              className="field mono"
+              style={{ flex: 1, minWidth: 0 }}
+              value={w.keys[d]}
+              onChange={(e) => patch({ keys: { ...w.keys, [d]: e.target.value } })}
+            >
+              {KEY_OPTIONS.map((k) => (
+                <option key={k.id} value={k.id}>{k.label}</option>
+              ))}
+            </select>
+          </div>
+        ))}
       </div>
     </>
   );

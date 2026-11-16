@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as RPE } from 'react';
-import { REF_H, REF_W, widgetSize, type KeyWidget, type Layout, type PadWidget, type Widget } from '@shared/layout';
+import { REF_H, REF_W, widgetSize, type KeyWidget, type Layout, type PadWidget, type StickWidget, type Widget } from '@shared/layout';
+import { stickDirections, type Direction } from '@shared/stick';
 import type { Connection } from './connection';
 
 interface Props {
@@ -13,6 +14,11 @@ interface Props {
 const PAD_BASE = 2.5;
 const TAP_MAX_MOVE = 8;
 const TAP_MAX_MS = 250;
+
+interface StickTouch {
+  pointerId: number;
+  dirs: Direction[];
+}
 
 interface PadTouch {
   pointerId: number;
@@ -49,11 +55,15 @@ export function Controller({ layout, conn, stream, rtt }: Props) {
   const [live, setLive] = useState<Set<string>>(new Set());
 
   // key id -> pointers holding it (two widgets can share a key)
-  const keyHolders = useRef(new Map<string, Set<number>>());
+  // (pointer ids, or "stick:<id>" for joysticks)
+  const keyHolders = useRef(new Map<string, Set<number | string>>());
   // pointer id -> widget id, for the pressed highlight
   const pointerWidget = useRef(new Map<number, string>());
   const pad = useRef<PadTouch | null>(null);
   const pending = useRef({ dx: 0, dy: 0, raf: 0 });
+  const sticks = useRef(new Map<string, StickTouch>());
+  // widget id -> thumb offset as a fraction of the radius
+  const [knobs, setKnobs] = useState<Record<string, { x: number; y: number; dirs: Direction[] }>>({});
 
   // Attach the WebRTC stream to the video element.
   useEffect(() => {
@@ -101,6 +111,8 @@ export function Controller({ layout, conn, stream, rtt }: Props) {
     keyHolders.current.clear();
     pointerWidget.current.clear();
     pad.current = null;
+    sticks.current.clear();
+    setKnobs({});
     setLive(new Set());
     conn.send({ t: 'releaseAll' });
   }
@@ -114,33 +126,86 @@ export function Controller({ layout, conn, stream, rtt }: Props) {
     });
   }
 
-  // ---- key buttons ----
-  const keyDown = (w: KeyWidget, e: RPE) => {
-    e.preventDefault();
+  /** Press / release a key for one holder. The PC only sees the first press and the last release. */
+  function holdKey(key: string, holder: number | string, down: boolean): void {
+    const holders = keyHolders.current.get(key) ?? new Set<number | string>();
+    if (down) {
+      if (holders.has(holder)) return;
+      const wasDown = holders.size > 0;
+      holders.add(holder);
+      keyHolders.current.set(key, holders);
+      if (!wasDown) conn.send({ t: 'key', key, down: true });
+    } else {
+      if (!holders.delete(holder)) return;
+      if (holders.size === 0) {
+        keyHolders.current.delete(key);
+        conn.send({ t: 'key', key, down: false });
+      }
+    }
+  }
+
+  function capture(e: RPE) {
     try {
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     } catch {
       /* ignore */
     }
-    const holders = keyHolders.current.get(w.key) ?? new Set<number>();
-    const wasDown = holders.size > 0;
-    holders.add(e.pointerId);
-    keyHolders.current.set(w.key, holders);
+  }
+
+  // ---- key buttons ----
+  const keyDown = (w: KeyWidget, e: RPE) => {
+    e.preventDefault();
+    capture(e);
     pointerWidget.current.set(e.pointerId, w.id);
     setWidgetLive(w.id, true);
-    if (!wasDown) conn.send({ t: 'key', key: w.key, down: true });
+    holdKey(w.key, e.pointerId, true);
   };
 
   const keyUp = (w: KeyWidget, e: RPE) => {
-    const holders = keyHolders.current.get(w.key);
-    if (!holders || !holders.has(e.pointerId)) return;
-    holders.delete(e.pointerId);
+    if (pointerWidget.current.get(e.pointerId) !== w.id) return;
     pointerWidget.current.delete(e.pointerId);
     if (![...pointerWidget.current.values()].includes(w.id)) setWidgetLive(w.id, false);
-    if (holders.size === 0) {
-      keyHolders.current.delete(w.key);
-      conn.send({ t: 'key', key: w.key, down: false });
-    }
+    holdKey(w.key, e.pointerId, false);
+  };
+
+  // ---- joystick ----
+  const stickUpdate = (w: StickWidget, e: RPE) => {
+    const t = sticks.current.get(w.id);
+    if (!t || t.pointerId !== e.pointerId) return;
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const radius = r.width / 2;
+    const dx = e.clientX - (r.left + radius);
+    const dy = e.clientY - (r.top + radius);
+    const dirs = stickDirections(dx, dy, radius, w.deadzone, w.eightWay);
+    const holder = `stick:${w.id}`;
+    for (const d of t.dirs) if (!dirs.includes(d)) holdKey(w.keys[d], holder, false);
+    for (const d of dirs) if (!t.dirs.includes(d)) holdKey(w.keys[d], holder, true);
+    t.dirs = dirs;
+    // Knob follows the finger but stays inside the ring.
+    const dist = Math.hypot(dx, dy);
+    const max = radius * 0.55;
+    const k = dist > max ? max / dist : 1;
+    setKnobs((prev) => ({ ...prev, [w.id]: { x: (dx * k) / radius, y: (dy * k) / radius, dirs } }));
+  };
+
+  const stickDown = (w: StickWidget, e: RPE) => {
+    e.preventDefault();
+    if (sticks.current.has(w.id)) return; // one finger per stick
+    capture(e);
+    sticks.current.set(w.id, { pointerId: e.pointerId, dirs: [] });
+    stickUpdate(w, e);
+  };
+
+  const stickUp = (w: StickWidget, e: RPE) => {
+    const t = sticks.current.get(w.id);
+    if (!t || t.pointerId !== e.pointerId) return;
+    for (const d of t.dirs) holdKey(w.keys[d], `stick:${w.id}`, false);
+    sticks.current.delete(w.id);
+    setKnobs((prev) => {
+      const next = { ...prev };
+      delete next[w.id];
+      return next;
+    });
   };
 
   // ---- touchpad ----
@@ -238,6 +303,33 @@ export function Controller({ layout, conn, stream, rtt }: Props) {
             >
               {w.label}
             </button>
+          );
+        }
+        if (w.kind === 'stick') {
+          const knob = knobs[w.id];
+          const r = rect(w);
+          const on = (d: Direction) => (knob?.dirs.includes(d) ? ' on' : '');
+          return (
+            <div
+              key={w.id}
+              className={`stick${knob ? ' down' : ''}`}
+              role="application"
+              aria-label="조이스틱: 끌어서 방향 입력"
+              style={{ ...r, background: `rgba(255,255,255,${w.opacity})` }}
+              onPointerDown={(e) => stickDown(w, e)}
+              onPointerMove={(e) => stickUpdate(w, e)}
+              onPointerUp={(e) => stickUp(w, e)}
+              onPointerCancel={(e) => stickUp(w, e)}
+            >
+              <span className={`arrow up${on('up')}`}>▲</span>
+              <span className={`arrow down${on('down')}`}>▼</span>
+              <span className={`arrow left${on('left')}`}>◀</span>
+              <span className={`arrow right${on('right')}`}>▶</span>
+              <span
+                className="knob"
+                style={{ transform: `translate(calc(-50% + ${(knob?.x ?? 0) * r.width / 2}px), calc(-50% + ${(knob?.y ?? 0) * r.width / 2}px))` }}
+              />
+            </div>
           );
         }
         if (w.kind === 'pad') {

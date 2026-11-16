@@ -38,6 +38,31 @@ export interface PadWidget {
   tapToClick: boolean;
 }
 
+export interface StickKeys {
+  up: string;
+  down: string;
+  left: string;
+  right: string;
+}
+
+/** Round joystick: drag the thumb and it holds the arrow keys for that direction. */
+export interface StickWidget {
+  id: string;
+  kind: 'stick';
+  /** Diameter in reference px. */
+  size: number;
+  x: number;
+  y: number;
+  opacity: number;
+  /** true = 8 directions (diagonals press two keys), false = 4 directions. */
+  eightWay: boolean;
+  /** Center area that presses nothing, as a fraction of the radius (0..0.6). */
+  deadzone: number;
+  keys: StickKeys;
+}
+
+export const DEFAULT_STICK_KEYS: StickKeys = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
+
 export interface ScreenWidget {
   id: 'screen';
   kind: 'screen';
@@ -49,7 +74,7 @@ export interface ScreenWidget {
   lockAspect: boolean;
 }
 
-export type Widget = KeyWidget | PadWidget | ScreenWidget;
+export type Widget = KeyWidget | PadWidget | StickWidget | ScreenWidget;
 
 export interface Layout {
   version: 1;
@@ -58,7 +83,7 @@ export interface Layout {
 }
 
 export function widgetSize(w: Widget): { w: number; h: number } {
-  return w.kind === 'key' ? { w: w.size, h: w.size } : { w: w.w, h: w.h };
+  return w.kind === 'key' || w.kind === 'stick' ? { w: w.size, h: w.size } : { w: w.w, h: w.h };
 }
 
 export function newId(): string {
@@ -76,10 +101,17 @@ export function defaultLayout(name = '메이플 기본'): Layout {
     name,
     widgets: [
       { id: 'screen', kind: 'screen', w: REF_W, h: REF_H, x: REF_W / 2, y: REF_H / 2, lockAspect: false },
-      key('↑', 'ArrowUp', 'square', 52, 122, 232),
-      key('←', 'ArrowLeft', 'square', 52, 66, 288),
-      key('→', 'ArrowRight', 'square', 52, 178, 288),
-      key('↓', 'ArrowDown', 'square', 52, 122, 344),
+      {
+        id: newId(),
+        kind: 'stick',
+        size: 150,
+        x: 120,
+        y: 290,
+        opacity: 0.16,
+        eightWay: true,
+        deadzone: 0.25,
+        keys: { ...DEFAULT_STICK_KEYS }
+      },
       key('Q', 'KeyQ', 'circle', 56, 578, 50),
       key('W', 'KeyW', 'circle', 56, 644, 50),
       key('E', 'KeyE', 'circle', 56, 710, 50),

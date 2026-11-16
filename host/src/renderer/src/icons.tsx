@@ -32,6 +32,9 @@ export const IconPad = ({ size = 26, color = 'currentColor' }: P) => (
 export const IconArrows = ({ size = 26, color = 'currentColor' }: P) => (
   <svg {...base(size, color)}><path d="M12 3v6M12 15v6M3 12h6M15 12h6" /></svg>
 );
+export const IconStick = ({ size = 26, color = 'currentColor' }: P) => (
+  <svg {...base(size, color)}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.5" /></svg>
+);
 export const IconMouse = ({ size = 26, color = 'currentColor' }: P) => (
   <svg {...base(size, color)}><rect x="6" y="3" width="12" height="18" rx="6" /><path d="M12 7v4" /></svg>
 );
