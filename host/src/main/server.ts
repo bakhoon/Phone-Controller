@@ -35,6 +35,7 @@ export interface ControllerServerEvents {
   disconnected: [];
   stats: [{ rtt: number }];
   rtc: [PhoneToHost];
+  log: [{ level: 'info' | 'error'; message: string }];
   error: [Error];
 }
 
@@ -157,6 +158,9 @@ export class ControllerServer extends EventEmitter<ControllerServerEvents> {
         break;
       case 'stats':
         this.emit('stats', { rtt: Number(msg.rtt) });
+        break;
+      case 'log':
+        this.emit('log', { level: msg.level === 'error' ? 'error' : 'info', message: String(msg.message).slice(0, 300) });
         break;
       case 'rtc-answer':
       case 'rtc-ice':

@@ -19,7 +19,8 @@ export type PhoneToHost =
   | { t: 'ping'; ts: number }
   | { t: 'stats'; rtt: number }
   | { t: 'rtc-answer'; sdp: string }
-  | { t: 'rtc-ice'; candidate: IceCandidate };
+  | { t: 'rtc-ice'; candidate: IceCandidate }
+  | { t: 'log'; level: 'info' | 'error'; message: string };
 
 export type HostToPhone =
   | { t: 'layout'; layout: Layout }

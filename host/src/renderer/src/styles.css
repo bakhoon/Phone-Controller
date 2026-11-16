@@ -70,6 +70,7 @@ label, .label { font-size: 13px; color: var(--sub); }
 
 .notice { display: flex; gap: 12px; padding: 14px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
 .notice.warn { background: rgba(255, 159, 67, 0.1); border: 1px solid rgba(255, 159, 67, 0.35); color: #ffc58a; }
+.notice.info { background: var(--card); border: 1px solid var(--line); color: var(--sub); }
 .notice.err { background: rgba(255, 92, 92, 0.1); border: 1px solid rgba(255, 92, 92, 0.4); color: #ffaaaa; }
 
 /* Home */

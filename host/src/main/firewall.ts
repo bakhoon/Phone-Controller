@@ -4,6 +4,7 @@
 import { execFile } from 'node:child_process';
 
 const RULE_NAME = 'Phone Controller';
+const RTC_RULE_NAME = 'Phone Controller (video)';
 
 function netsh(args: string[]): Promise<{ ok: boolean; out: string }> {
   return new Promise((resolve) => {
@@ -29,5 +30,22 @@ export async function ensureFirewallRule(port: number): Promise<boolean> {
     'profile=any'
   ]);
   if (!res.ok) console.warn('[firewall] could not add rule:', res.out);
-  return res.ok;
+
+  // WebRTC video uses random UDP ports, so allow UDP for this program only.
+  await netsh(['advfirewall', 'firewall', 'delete', 'rule', `name=${RTC_RULE_NAME}`]);
+  const rtc = await netsh([
+    'advfirewall',
+    'firewall',
+    'add',
+    'rule',
+    `name=${RTC_RULE_NAME}`,
+    'dir=in',
+    'action=allow',
+    `program=${process.execPath}`,
+    'protocol=UDP',
+    'remoteip=localsubnet',
+    'profile=any'
+  ]);
+  if (!rtc.ok) console.warn('[firewall] could not add video rule:', rtc.out);
+  return res.ok && rtc.ok;
 }

@@ -10,6 +10,10 @@ import { ensureFirewallRule } from './firewall';
 import { loadLayouts, loadSettings, saveLayouts, saveSettings, type LayoutStore, type Settings } from './store';
 import type { HostState } from '../preload/api';
 
+// Chromium hides local IPs behind random .local (mDNS) names in WebRTC.
+// iPhones often can't resolve those on home routers, so send real LAN IPs.
+app.commandLine.appendSwitch('disable-features', 'WebRtcHideLocalIpsWithMdns');
+
 let win: BrowserWindow | null = null;
 let settings: Settings = loadSettings();
 let layouts: LayoutStore = loadLayouts();
@@ -32,6 +36,7 @@ const state: HostState = {
   inputAvailable: input.available,
   isAdmin: false,
   firewallOk: null,
+  phoneLog: null,
   platform: process.platform
 };
 
@@ -90,11 +95,17 @@ server.on('connected', (info) => {
 server.on('disconnected', () => {
   state.phone = { connected: false, ua: '', address: '' };
   state.rtt = null;
+  state.phoneLog = null;
   pushState();
   win?.webContents.send('phone', 'disconnected');
 });
 server.on('stats', ({ rtt }) => {
   state.rtt = Number.isFinite(rtt) ? Math.round(rtt) : null;
+  pushState();
+});
+server.on('log', (entry) => {
+  console.log(`[phone] ${entry.level}: ${entry.message}`);
+  state.phoneLog = entry;
   pushState();
 });
 server.on('rtc', (msg) => win?.webContents.send('rtc', msg));

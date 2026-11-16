@@ -102,6 +102,13 @@ export function Home({ state, stream, onNavigate }: Props) {
           )}
         </section>
 
+        {connected && state.phoneLog && (
+          <div className={`notice ${state.phoneLog.level === 'error' ? 'err' : 'info'}`} style={{ maxWidth: 520, width: '100%' }}>
+            <IconWarn />
+            폰: {state.phoneLog.message}
+          </div>
+        )}
+
         <p className="hint" style={{ textAlign: 'center' }}>
           PC와 폰이 같은 Wi‑Fi에 있어야 해요. 연결이 안 되면 Windows 방화벽에서 이 앱을 "개인 네트워크"로 허용하세요.
         </p>

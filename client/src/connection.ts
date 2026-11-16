@@ -33,6 +33,11 @@ export class Connection {
     this.connect();
   }
 
+  /** Report a status / error line to the PC app (shown on its main screen). */
+  log(level: 'info' | 'error', message: string): void {
+    this.send({ t: 'log', level, message });
+  }
+
   send(msg: PhoneToHost): void {
     if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(msg));
   }
@@ -86,7 +91,11 @@ export class Connection {
         break;
       }
       case 'rtc-offer':
-        await this.answer(msg.sdp);
+        try {
+          await this.answer(msg.sdp);
+        } catch (err) {
+          this.log('error', `영상 연결 준비 실패: ${String(err)}`);
+        }
         break;
       case 'rtc-ice':
         if (this.pc?.remoteDescription) await this.pc.addIceCandidate(msg.candidate).catch(() => {});
@@ -103,6 +112,10 @@ export class Connection {
 
   private async answer(sdp: string): Promise<void> {
     this.closePeer();
+    if (typeof RTCPeerConnection === 'undefined') {
+      this.log('error', '이 브라우저에서 WebRTC를 쓸 수 없어요 (HTTPS가 필요할 수 있음)');
+      return;
+    }
     const pc = new RTCPeerConnection({ iceServers: [] });
     this.pc = pc;
     pc.ontrack = (e) => {
@@ -115,6 +128,12 @@ export class Connection {
         /* not supported */
       }
       this.onStream(e.streams[0] ?? new MediaStream([e.track]));
+    };
+    pc.onconnectionstatechange = () => {
+      if (pc !== this.pc) return;
+      if (pc.connectionState === 'connecting') this.log('info', '영상 연결 중...');
+      if (pc.connectionState === 'connected') this.log('info', '영상 연결됨');
+      if (pc.connectionState === 'failed') this.log('error', '영상 연결 실패: 방화벽 또는 네트워크가 영상(UDP)을 막고 있어요');
     };
     pc.onicecandidate = (e) => {
       if (e.candidate) this.send({ t: 'rtc-ice', candidate: e.candidate.toJSON() as IceCandidate });

@@ -60,7 +60,13 @@ export function Controller({ layout, conn, stream, rtt }: Props) {
     const v = videoRef.current;
     if (!v) return;
     v.srcObject = stream;
-    if (stream) v.play().then(() => setNeedTap(false)).catch(() => setNeedTap(true));
+    if (stream)
+      v.play()
+        .then(() => setNeedTap(false))
+        .catch((err) => {
+          setNeedTap(true);
+          conn.log('info', `영상 자동 재생이 막혀서 탭이 필요해요 (${String(err)})`);
+        });
   }, [stream]);
 
   // Stop iOS from scrolling / zooming / showing callouts while playing.

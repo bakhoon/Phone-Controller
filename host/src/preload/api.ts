@@ -28,6 +28,8 @@ export interface HostState {
   isAdmin: boolean;
   /** Windows Firewall rule added (null = not checked / not Windows). */
   firewallOk: boolean | null;
+  /** Last status / error message reported by the phone. */
+  phoneLog: { level: 'info' | 'error'; message: string } | null;
   platform: string;
 }
 
