@@ -355,6 +355,7 @@ export function Controller({ layout, conn, stream, rtt }: Props) {
       <div className="pill">
         <span className={`dot ${rtt === null ? '' : rtt < 60 ? 'good' : rtt < 120 ? 'ok' : 'bad'}`} />
         <span className="mono">{rtt === null ? '- ms' : `${Math.round(rtt)} ms`}</span>
+        <span className="pill-sub">{layout.name} · v{__APP_VERSION__}</span>
       </div>
 
       {needTap && (

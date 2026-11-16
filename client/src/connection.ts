@@ -53,7 +53,7 @@ export class Connection {
     ws.onopen = () => {
       this.failures = 0;
       this.onStatus('connected');
-      this.send({ t: 'hello', ua: navigator.userAgent });
+      this.send({ t: 'hello', ua: navigator.userAgent, version: __APP_VERSION__ });
       window.clearInterval(this.pingTimer);
       this.pingTimer = window.setInterval(() => this.send({ t: 'ping', ts: performance.now() }), PING_MS);
     };

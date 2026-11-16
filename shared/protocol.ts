@@ -12,7 +12,7 @@ export interface IceCandidate {
 }
 
 export type PhoneToHost =
-  | { t: 'hello'; ua: string }
+  | { t: 'hello'; ua: string; version?: string }
   | { t: 'key'; key: string; down: boolean }
   | { t: 'move'; dx: number; dy: number }
   | { t: 'releaseAll' }

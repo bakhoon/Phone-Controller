@@ -28,6 +28,7 @@ const SILENCE_RELEASE_MS = 2500;
 export interface PhoneInfo {
   ua: string;
   address: string;
+  version: string;
 }
 
 export interface ControllerServerEvents {
@@ -142,7 +143,7 @@ export class ControllerServer extends EventEmitter<ControllerServerEvents> {
     switch (msg.t) {
       case 'hello':
         this.send(this.getLayoutMessage());
-        this.emit('connected', { ua: msg.ua, address });
+        this.emit('connected', { ua: msg.ua, address, version: typeof msg.version === 'string' ? msg.version : '' });
         break;
       case 'key':
         if (typeof msg.key === 'string') this.input.key(msg.key, !!msg.down);

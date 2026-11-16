@@ -32,6 +32,7 @@ export function Home({ state, stream, onNavigate }: Props) {
         <div className="row">
           <div className="logo"><IconController color="#0B1A13" /></div>
           <span style={{ fontSize: 18, fontWeight: 700 }}>폰 컨트롤러</span>
+          <span className="hint mono" style={{ fontSize: 12 }}>v{state.appVersion}</span>
         </div>
         <nav className="row">
           <button className="btn" onClick={() => onNavigate('layout')}>
@@ -102,6 +103,12 @@ export function Home({ state, stream, onNavigate }: Props) {
           )}
         </section>
 
+        {connected && state.phone.version !== state.appVersion && (
+          <div className="notice warn" style={{ maxWidth: 520, width: '100%' }}>
+            <IconWarn />
+            폰 페이지가 예전 버전이에요 (폰 {state.phone.version || '알 수 없음'}, PC {state.appVersion}). 폰에서 새로고침하거나 QR을 다시 찍어 주세요.
+          </div>
+        )}
         {connected && state.phoneLog && (
           <div className={`notice ${state.phoneLog.level === 'error' ? 'err' : 'info'}`} style={{ maxWidth: 520, width: '100%' }}>
             <IconWarn />

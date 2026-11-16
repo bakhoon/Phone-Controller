@@ -22,7 +22,8 @@ export interface HostState {
   port: number;
   qrDataUrl: string;
   serverError: string | null;
-  phone: { connected: boolean; ua: string; address: string };
+  phone: { connected: boolean; ua: string; address: string; version: string };
+  appVersion: string;
   rtt: number | null;
   inputAvailable: boolean;
   isAdmin: boolean;

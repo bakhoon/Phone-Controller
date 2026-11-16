@@ -31,7 +31,8 @@ const state: HostState = {
   port: settings.port,
   qrDataUrl: '',
   serverError: null,
-  phone: { connected: false, ua: '', address: '' },
+  phone: { connected: false, ua: '', address: '', version: '' },
+  appVersion: app.getVersion(),
   rtt: null,
   inputAvailable: input.available,
   isAdmin: false,
@@ -88,12 +89,12 @@ function checkAdmin(): Promise<void> {
 }
 
 server.on('connected', (info) => {
-  state.phone = { connected: true, ua: info.ua, address: info.address };
+  state.phone = { connected: true, ua: info.ua, address: info.address, version: info.version };
   pushState();
   win?.webContents.send('phone', 'connected');
 });
 server.on('disconnected', () => {
-  state.phone = { connected: false, ua: '', address: '' };
+  state.phone = { connected: false, ua: '', address: '', version: '' };
   state.rtt = null;
   state.phoneLog = null;
   pushState();
