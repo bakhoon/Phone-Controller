@@ -8,6 +8,13 @@ PC 화면을 폰으로 스트리밍하고, 폰 화면 위의 버튼과 터치패
 
 > 매크로 기능은 없어요. 사람이 직접 누른 입력만 전달해요.
 
+## 설치 파일 받기 (npm 필요 없음)
+
+[Releases](https://github.com/bakhoon/Phone-Controller/releases)에서 최신 `Phone Controller Setup x.x.x.exe`를 받아 설치하면 돼요.
+Node.js나 npm이 없어도 돼요. 폰은 설치할 것 없이 QR만 찍으면 돼요.
+
+새 버전 올리는 법 (개발자): `package.json` 버전을 올리고 `git tag v0.1.2 && git push --tags` 하면 GitHub Actions가 설치 파일을 만들어 Releases에 올려요.
+
 ## 구조
 
 ```
