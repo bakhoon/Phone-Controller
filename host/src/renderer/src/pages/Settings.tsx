@@ -32,12 +32,12 @@ export function SettingsPage({ settings, onSave, onBack }: Props) {
       <header className="topbar">
         <div className="row">
           <button className="btn icon" aria-label="메인으로" onClick={onBack}><IconBack /></button>
-          <h1>세팅</h1>
+          <h1>설정</h1>
         </div>
       </header>
 
       <div className="settings">
-        <section className="card">
+        <section>
           <h2>연결</h2>
           <div className="col">
             <label htmlFor="port">포트 번호</label>
@@ -54,7 +54,7 @@ export function SettingsPage({ settings, onSave, onBack }: Props) {
           <p className="hint">게임이 관리자 권한으로 실행되면 이 프로그램도 관리자 권한으로 실행해야 입력이 들어가요.</p>
         </section>
 
-        <section className="card">
+        <section>
           <h2>화면 전송</h2>
           <div className="col">
             <label htmlFor="monitor">캡처할 모니터</label>
@@ -90,7 +90,7 @@ export function SettingsPage({ settings, onSave, onBack }: Props) {
           </div>
         </section>
 
-        <section className="card">
+        <section>
           <h2>입력</h2>
           <div className="setting-row">
             <div className="col" style={{ gap: 2 }}>

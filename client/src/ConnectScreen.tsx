@@ -33,20 +33,19 @@ export function ConnectScreen({ status, onRetry }: { status: ConnStatus; onRetry
       <div className="connect-main">
         {(status === 'connecting' || status === 'connected') && (
           <>
-            <svg className="spinner" width="88" height="88" viewBox="0 0 88 88" role="img" aria-label="연결 중">
-              <circle cx="44" cy="44" r="36" fill="none" stroke="#2A2E3D" strokeWidth="8" />
-              <path d="M44 8a36 36 0 0 1 36 36" fill="none" stroke="#3DDC97" strokeWidth="8" strokeLinecap="round" />
+            <svg className="spinner" width="40" height="40" viewBox="0 0 40 40" role="img" aria-label="연결 중">
+              <circle cx="20" cy="20" r="16" fill="none" stroke="#d6d4ce" strokeWidth="3" />
+              <path d="M20 4a16 16 0 0 1 16 16" fill="none" stroke="#1f1f1f" strokeWidth="3" strokeLinecap="round" />
             </svg>
-            <h1>PC에 연결 중...</h1>
-            <span className="mono muted">{location.host}</span>
+            <h1>PC에 연결하는 중</h1>
+            <span className="muted">{location.host}</span>
           </>
         )}
 
         {status === 'failed' && (
           <>
-            <div className="badge err" aria-hidden="true">✕</div>
-            <h1>연결하지 못했어요</h1>
-            <span className="sub">PC를 찾을 수 없어요. 계속 다시 시도하고 있어요.</span>
+            <h1>PC를 찾을 수 없어요</h1>
+            <span className="sub">계속 다시 시도하고 있어요. 아래를 확인해 보세요.</span>
             <ul className="checklist">
               <li>PC와 폰이 같은 Wi‑Fi인가요? (데이터 X)</li>
               <li>PC에서 폰 컨트롤러 프로그램이 켜져 있나요?</li>
@@ -58,23 +57,20 @@ export function ConnectScreen({ status, onRetry }: { status: ConnStatus; onRetry
 
         {status === 'replaced' && (
           <>
-            <div className="badge" aria-hidden="true">!</div>
-            <h1>다른 기기가 연결됐어요</h1>
+            <h1>다른 폰이 연결됐어요</h1>
             <span className="sub">한 번에 폰 하나만 조작할 수 있어요.</span>
-            <button className="primary" onClick={() => location.reload()}>이 폰으로 다시 연결</button>
+            <button className="primary" onClick={() => location.reload()}>이 폰으로 연결</button>
           </>
         )}
       </div>
 
-      <div className="tip">
-        <span>게임하려면 폰을 <b>가로로</b> 돌려 주세요</span>
-      </div>
+      <p className="foot">폰을 가로로 돌려서 쓰세요 (v{__APP_VERSION__})</p>
 
       {!hideA2hs && (
         <div className="tip mint">
           <div>
-            <b>홈 화면에 추가하면 더 편해요</b>
-            <p>Safari 공유 버튼 → "홈 화면에 추가". 앱처럼 전체 화면으로 열려요.</p>
+            <b>홈 화면에 추가하면 전체 화면으로 열려요</b>
+            <p>Safari 공유 버튼을 누르고 "홈 화면에 추가"를 고르세요.</p>
           </div>
           <button className="close" aria-label="안내 닫기" onClick={dismiss}>✕</button>
         </div>

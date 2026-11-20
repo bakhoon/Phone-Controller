@@ -194,7 +194,7 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
       <header className="topbar">
         <div className="row">
           <button className="btn icon" aria-label="메인으로" onClick={back}><IconBack /></button>
-          <h1>레이아웃 편집</h1>
+          <h1>버튼 배치</h1>
         </div>
         <div className="row">
           <label htmlFor="profile">프로필</label>
@@ -224,7 +224,7 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
           <button className="btn small" onClick={resetProfile}>기본값</button>
           <button className="btn small danger" disabled={items.length <= 1} onClick={deleteProfile}>삭제</button>
           <button className="btn primary" disabled={!dirty || saving} onClick={() => void save()}>
-            {dirty ? '저장하고 폰에 반영' : '저장됨'}
+            {dirty ? '저장' : '저장됨'}
           </button>
         </div>
       </header>
@@ -233,7 +233,7 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
         <aside className="palette" aria-label="위젯 추가">
           <h2>위젯 추가</h2>
           <button onClick={() => add([newKey('A', 'KeyA', 'circle', 60, REF_W / 2, REF_H / 2)])}>
-            <span style={{ width: 26, height: 26, borderRadius: '50%', border: '1.5px solid var(--mint)', display: 'grid', placeItems: 'center', fontSize: 11, color: 'var(--mint)' }}>K</span>
+            <span style={{ width: 26, height: 26, borderRadius: '50%', border: "1.5px solid currentColor", display: "grid", placeItems: "center", fontSize: 11 }}>K</span>
             키 버튼
           </button>
           <button
@@ -246,7 +246,7 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
               ])
             }
           >
-            <IconArrows color="var(--mint)" /> 방향키 4개
+            <IconArrows /> 방향키 4개
           </button>
           <button
             onClick={() =>
@@ -265,7 +265,7 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
               ])
             }
           >
-            <IconStick color="var(--mint)" />
+            <IconStick />
             <span>
               조이스틱
               <br />
@@ -273,14 +273,14 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
             </span>
           </button>
           <button onClick={() => add([newKey('클릭', 'MouseLeft', 'circle', 70, REF_W / 2, REF_H / 2)])}>
-            <IconMouse color="var(--mint)" /> 마우스 클릭
+            <IconMouse /> 마우스 클릭
           </button>
           <button
             onClick={() =>
               add([{ id: newId(), kind: 'pad', w: 220, h: 110, x: REF_W / 2, y: REF_H / 2, opacity: 0.12, sensitivity: 1, tapToClick: true }])
             }
           >
-            <IconPad color="var(--mint)" />
+            <IconPad />
             <span>
               터치패드
               <br />
@@ -325,16 +325,16 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
               <span className={`dot ${state.phone.connected ? 'on' : ''}`} style={{ width: 8, height: 8, boxShadow: 'none' }} />
               {state.phone.connected ? '폰 연결됨' : '폰 연결 안 됨'}
             </span>
-            {state.phone.connected && <span className="mono" style={{ color: 'var(--mint)' }}>{state.rtt ?? '-'} ms</span>}
+            {state.phone.connected && <span className="mono" style={{ color: 'var(--text)' }}>{state.rtt ?? '-'} ms</span>}
             <span style={{ color: 'var(--sub)' }}>
               마지막 입력: <b className="mono" style={{ color: 'var(--text)' }}>{lastInput || '없음'}</b>
             </span>
             <button className="btn small" onClick={() => setGrid((g) => !g)}>격자 {grid ? '끄기' : '켜기'}</button>
           </div>
-          <p className="hint">폰에서 버튼을 누르면 여기서 민트색으로 표시돼요.</p>
+          <p className="hint">폰에서 누른 버튼은 여기서 하얗게 표시돼요.</p>
         </section>
 
-        <aside className="card panel" aria-label="선택한 위젯 설정">
+        <aside className="panel" aria-label="선택한 위젯 설정">
           {!sel && (
             <>
               <h2>선택한 위젯 없음</h2>
@@ -403,13 +403,13 @@ function WidgetView({ w, selected, live, onDown, onHandleDown, onMove, onUp, onF
   if (w.kind === 'key') {
     faceStyle = {
       borderRadius: w.shape === 'circle' ? '50%' : 14,
-      background: selected ? 'rgba(61,220,151,0.3)' : `rgba(255,255,255,${w.opacity})`,
+      background: selected ? 'rgba(111,140,255,0.35)' : `rgba(255,255,255,${w.opacity})`,
       fontSize: Math.max(12, Math.round(w.size * 0.3))
     };
     content = w.label;
     aria = `${w.label} 버튼 (${keyLabel(w.key)})`;
   } else if (w.kind === 'stick') {
-    faceStyle = { borderRadius: '50%', background: selected ? 'rgba(61,220,151,0.25)' : `rgba(255,255,255,${w.opacity})` };
+    faceStyle = { borderRadius: '50%', background: selected ? 'rgba(111,140,255,0.3)' : `rgba(255,255,255,${w.opacity})` };
     const arrow = (style: CSSProperties, ch: string) => (
       <span aria-hidden="true" style={{ position: 'absolute', fontSize: 12, color: 'rgba(255,255,255,0.6)', ...style }}>{ch}</span>
     );
@@ -424,7 +424,7 @@ function WidgetView({ w, selected, live, onDown, onHandleDown, onMove, onUp, onF
     );
     aria = `조이스틱 (${w.eightWay ? '8방향' : '4방향'})`;
   } else if (w.kind === 'pad') {
-    faceStyle = { background: selected ? 'rgba(61,220,151,0.25)' : `rgba(255,255,255,${w.opacity})` };
+    faceStyle = { background: selected ? 'rgba(111,140,255,0.3)' : `rgba(255,255,255,${w.opacity})` };
     content = (
       <>
         <IconPad size={22} />
@@ -435,9 +435,9 @@ function WidgetView({ w, selected, live, onDown, onHandleDown, onMove, onUp, onF
   } else {
     content = (
       <>
-        <span aria-hidden="true" style={{ position: 'absolute', left: '10%', top: '64%', width: '34%', height: '3.5%', background: '#343A4F', borderRadius: 4 }} />
-        <span aria-hidden="true" style={{ position: 'absolute', left: '54%', top: '44%', width: '27%', height: '3.5%', background: '#343A4F', borderRadius: 4 }} />
-        <span aria-hidden="true" style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: '11%', background: '#2C3244' }} />
+        <span aria-hidden="true" style={{ position: 'absolute', left: '10%', top: '64%', width: '34%', height: '3.5%', background: '#4a4a4a', borderRadius: 4 }} />
+        <span aria-hidden="true" style={{ position: 'absolute', left: '54%', top: '44%', width: '27%', height: '3.5%', background: '#4a4a4a', borderRadius: 4 }} />
+        <span aria-hidden="true" style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: '11%', background: '#444444' }} />
         <span>PC 화면 (스트리밍)</span>
       </>
     );
