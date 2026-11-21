@@ -16,7 +16,7 @@ function isStandalone(): boolean {
   return nav.standalone === true || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
 }
 
-export function ConnectScreen({ status, onRetry }: { status: ConnStatus; onRetry: () => void }) {
+export function ConnectScreen({ status, remote, onRetry }: { status: ConnStatus; remote: boolean; onRetry: () => void }) {
   const [hideA2hs, setHideA2hs] = useState(() => readDismissed() || isStandalone());
 
   const dismiss = () => {
@@ -46,12 +46,40 @@ export function ConnectScreen({ status, onRetry }: { status: ConnStatus; onRetry
           <>
             <h1>PC를 찾을 수 없어요</h1>
             <span className="sub">계속 다시 시도하고 있어요. 아래를 확인해 보세요.</span>
-            <ul className="checklist">
-              <li>PC와 폰이 같은 Wi‑Fi인가요? (데이터 X)</li>
-              <li>PC에서 폰 컨트롤러 프로그램이 켜져 있나요?</li>
-              <li>Windows 방화벽에서 "개인 네트워크"로 허용했나요?</li>
-            </ul>
+            {remote ? (
+              <ul className="checklist">
+                <li>폰이 인터넷에 연결돼 있나요?</li>
+                <li>PC에서 폰 컨트롤러가 켜져 있나요?</li>
+              </ul>
+            ) : (
+              <ul className="checklist">
+                <li>PC와 폰이 같은 Wi‑Fi인가요? (카페 Wi‑Fi는 막혀 있을 수 있어요)</li>
+                <li>PC에서 폰 컨트롤러가 켜져 있나요?</li>
+                <li>PC 앱을 관리자 권한으로 켰나요? (방화벽이 자동으로 열려요)</li>
+              </ul>
+            )}
             <button className="primary" onClick={onRetry}>다시 시도</button>
+          </>
+        )}
+
+        {status === 'host-offline' && (
+          <>
+            <h1>PC 앱이 꺼져 있어요</h1>
+            <span className="sub">PC에서 폰 컨트롤러를 켜면 자동으로 연결돼요.</span>
+          </>
+        )}
+
+        {status === 'denied' && (
+          <>
+            <h1>연결 키가 맞지 않아요</h1>
+            <span className="sub">예전 QR이에요. PC 앱에 보이는 QR을 다시 찍어 주세요.</span>
+          </>
+        )}
+
+        {status === 'kicked' && (
+          <>
+            <h1>PC에서 연결을 끊었어요</h1>
+            <button className="primary" onClick={() => location.reload()}>다시 연결</button>
           </>
         )}
 

@@ -1,14 +1,13 @@
-// HTTP server for the phone web app + WebSocket for input, layout and signaling.
-// Only one phone is controlled at a time; a new phone replaces the old one.
+// Same‑Wi‑Fi path: HTTP server for the phone web app + WebSocket for input,
+// layout and signaling. Who is in control is decided by PhoneHub.
 
-import { createServer, type Server } from 'node:http';
+import { createServer, type Server, type ServerResponse } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, sep } from 'node:path';
-import { EventEmitter } from 'node:events';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { HostToPhone, PhoneToHost } from '@shared/protocol';
 import { WS_PATH } from '@shared/protocol';
-import type { InputController } from './input';
+import type { PhoneHub, PhoneLink } from './hub';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -22,42 +21,14 @@ const MIME: Record<string, string> = {
   '.woff2': 'font/woff2'
 };
 
-/** If keys are held and the phone goes quiet this long, release everything. */
-const SILENCE_RELEASE_MS = 2500;
-
-export interface PhoneInfo {
-  ua: string;
-  address: string;
-  version: string;
-}
-
-export interface ControllerServerEvents {
-  connected: [PhoneInfo];
-  disconnected: [];
-  stats: [{ rtt: number }];
-  rtc: [PhoneToHost];
-  log: [{ level: 'info' | 'error'; message: string }];
-  error: [Error];
-}
-
-export class ControllerServer extends EventEmitter<ControllerServerEvents> {
+export class ControllerServer {
   private http: Server | null = null;
   private wss: WebSocketServer | null = null;
-  private phone: WebSocket | null = null;
-  private lastSeen = 0;
-  private watchdog: NodeJS.Timeout | null = null;
 
   constructor(
     private clientDir: string,
-    private input: InputController,
-    private getLayoutMessage: () => HostToPhone
-  ) {
-    super();
-  }
-
-  get connected(): boolean {
-    return this.phone !== null && this.phone.readyState === WebSocket.OPEN;
-  }
+    private hub: PhoneHub
+  ) {}
 
   start(port: number): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -68,44 +39,36 @@ export class ControllerServer extends EventEmitter<ControllerServerEvents> {
       // 0.0.0.0 so the phone on the same Wi‑Fi can reach it (localhost would only work on this PC).
       http.listen(port, '0.0.0.0', () => {
         http.off('error', reject);
-        http.on('error', (e) => this.emit('error', e));
+        http.on('error', (e) => console.error('[server]', e));
         this.http = http;
         this.wss = wss;
-        this.watchdog = setInterval(() => this.checkSilence(), 500);
         resolve();
       });
     });
   }
 
   async stop(): Promise<void> {
-    if (this.watchdog) clearInterval(this.watchdog);
-    this.watchdog = null;
-    this.input.releaseAll();
-    this.phone?.terminate();
-    this.phone = null;
+    for (const ws of this.wss?.clients ?? []) ws.terminate();
     this.wss?.close();
     await new Promise<void>((r) => (this.http ? this.http.close(() => r()) : r()));
     this.http = null;
     this.wss = null;
   }
 
-  send(msg: HostToPhone): void {
-    if (this.connected) this.phone!.send(JSON.stringify(msg));
-  }
-
   private onConnection(ws: WebSocket, address: string): void {
-    if (this.phone) {
-      // Newest phone wins. Release everything the old one was holding.
-      this.input.releaseAll();
-      try {
-        this.phone.send(JSON.stringify({ t: 'replaced' } satisfies HostToPhone));
-      } catch {
-        /* ignore */
+    const send = (msg: HostToPhone) => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+    };
+    const link: PhoneLink = {
+      kind: 'local',
+      address,
+      send,
+      kick: (msg) => {
+        send(msg);
+        ws.close();
       }
-      this.phone.close();
-    }
-    this.phone = ws;
-    this.lastSeen = Date.now();
+    };
+
     let alive = true;
     ws.on('pong', () => (alive = true));
     const heartbeat = setInterval(() => {
@@ -118,66 +81,22 @@ export class ControllerServer extends EventEmitter<ControllerServerEvents> {
     }, 2000);
 
     ws.on('message', (data) => {
-      this.lastSeen = Date.now();
       let msg: PhoneToHost;
       try {
         msg = JSON.parse(String(data)) as PhoneToHost;
       } catch {
         return;
       }
-      this.handle(msg, ws, address);
+      this.hub.fromLink(link, msg);
     });
 
     ws.on('close', () => {
       clearInterval(heartbeat);
-      if (this.phone === ws) {
-        this.phone = null;
-        this.input.releaseAll();
-        this.emit('disconnected');
-      }
+      this.hub.linkClosed(link);
     });
   }
 
-  private handle(msg: PhoneToHost, ws: WebSocket, address: string): void {
-    if (ws !== this.phone) return;
-    switch (msg.t) {
-      case 'hello':
-        this.send(this.getLayoutMessage());
-        this.emit('connected', { ua: msg.ua, address, version: typeof msg.version === 'string' ? msg.version : '' });
-        break;
-      case 'key':
-        if (typeof msg.key === 'string') this.input.key(msg.key, !!msg.down);
-        break;
-      case 'move':
-        this.input.move(Number(msg.dx), Number(msg.dy));
-        break;
-      case 'releaseAll':
-        this.input.releaseAll();
-        break;
-      case 'ping':
-        this.send({ t: 'pong', ts: msg.ts });
-        break;
-      case 'stats':
-        this.emit('stats', { rtt: Number(msg.rtt) });
-        break;
-      case 'log':
-        this.emit('log', { level: msg.level === 'error' ? 'error' : 'info', message: String(msg.message).slice(0, 300) });
-        break;
-      case 'rtc-answer':
-      case 'rtc-ice':
-        this.emit('rtc', msg);
-        break;
-    }
-  }
-
-  private checkSilence(): void {
-    if (this.input.pressedCount > 0 && Date.now() - this.lastSeen > SILENCE_RELEASE_MS) {
-      console.warn('[server] phone went quiet, releasing all keys');
-      this.input.releaseAll();
-    }
-  }
-
-  private async serveStatic(url: string, res: import('node:http').ServerResponse): Promise<void> {
+  private async serveStatic(url: string, res: ServerResponse): Promise<void> {
     const path = decodeURIComponent(url.split('?')[0]);
     const rel = normalize(path === '/' ? '/index.html' : path).replace(/^([/\\])+/, '');
     let full = join(this.clientDir, rel);

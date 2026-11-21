@@ -19,6 +19,8 @@ export function SettingsPage({ settings, onSave, onBack }: Props) {
 
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setDraft((d) => ({ ...d, [k]: v }));
   const portValid = Number.isInteger(draft.port) && draft.port >= 1024 && draft.port <= 65535;
+  const relayValid = draft.relayUrl === '' || /^https:\/\/[^\s/]+(\/.*)?$/.test(draft.relayUrl.trim());
+  const [keyMsg, setKeyMsg] = useState('');
 
   const save = async () => {
     setSaving(true);
@@ -91,6 +93,42 @@ export function SettingsPage({ settings, onSave, onBack }: Props) {
         </section>
 
         <section>
+          <h2>멀리서 연결</h2>
+          <p className="hint">
+            Cloudflare에 올린 중계 서버 주소를 넣으면, 폰과 PC가 다른 네트워크에 있어도 연결돼요. 비워 두면 같은 Wi‑Fi에서만 써요.
+          </p>
+          <div className="col">
+            <label htmlFor="relay">중계 서버 주소</label>
+            <input
+              id="relay"
+              className="field"
+              placeholder="https://phone-controller.내계정.workers.dev"
+              value={draft.relayUrl}
+              onChange={(e) => set('relayUrl', e.target.value.trim())}
+            />
+            {!relayValid && <span className="hint" style={{ color: 'var(--err)' }}>https:// 로 시작하는 주소를 넣어 주세요</span>}
+          </div>
+          <div className="setting-row">
+            <div className="col" style={{ gap: 2 }}>
+              <span style={{ fontWeight: 500 }}>연결 키 새로 만들기</span>
+              <span className="hint">QR이나 홈 화면 아이콘이 다른 사람한테 알려졌을 때 쓰세요. 예전 QR은 더 이상 안 돼요.</span>
+            </div>
+            <button
+              className="btn"
+              onClick={async () => {
+                if (!window.confirm('새 연결 키를 만들까요? 폰에서 QR을 다시 찍어야 해요.')) return;
+                const s = await window.api.newRoomKey();
+                setDraft((d) => ({ ...d, roomKey: s.roomKey }));
+                setKeyMsg('새 키를 만들었어요. 폰에서 QR을 다시 찍어 주세요.');
+              }}
+            >
+              새로 만들기
+            </button>
+          </div>
+          {keyMsg && <p className="hint">{keyMsg}</p>}
+        </section>
+
+        <section>
           <h2>입력</h2>
           <div className="setting-row">
             <div className="col" style={{ gap: 2 }}>
@@ -105,7 +143,7 @@ export function SettingsPage({ settings, onSave, onBack }: Props) {
 
       <div className="savebar">
         <button className="btn" onClick={onBack}>취소</button>
-        <button className="btn primary" disabled={!portValid || saving} onClick={() => void save()}>저장</button>
+        <button className="btn primary" disabled={!portValid || !relayValid || saving} onClick={() => void save()}>저장</button>
       </div>
     </>
   );

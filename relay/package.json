@@ -1,0 +1,16 @@
+{
+  "name": "relay",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build -w client --prefix .. && wrangler dev",
+    "deploy": "npm run build -w client --prefix .. && wrangler deploy",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261121.1",
+    "typescript": "~5.9.3",
+    "wrangler": "^4.166.0"
+  }
+}

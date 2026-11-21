@@ -3,6 +3,7 @@
 import { app } from 'electron';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { defaultLayout, normalizeLayout, type Layout } from '@shared/layout';
 
 export interface Settings {
@@ -12,6 +13,11 @@ export interface Settings {
   fps: 30 | 60;
   maxHeight: 720 | 1080;
   latencyFirst: boolean;
+  /** Cloudflare relay URL for play-from-anywhere, e.g. https://phone-controller.you.workers.dev. Empty = off. */
+  relayUrl: string;
+  /** This PC's room on the relay, and the secret a phone needs to join it. */
+  roomId: string;
+  roomKey: string;
 }
 
 export interface LayoutStore {
@@ -19,7 +25,11 @@ export interface LayoutStore {
   items: Layout[];
 }
 
-const DEFAULT_SETTINGS: Settings = { port: 8080, displayId: '', fps: 60, maxHeight: 1080, latencyFirst: true };
+const DEFAULT_SETTINGS: Settings = { port: 8080, displayId: '', fps: 60, maxHeight: 1080, latencyFirst: true, relayUrl: '', roomId: '', roomKey: '' };
+
+export function randomToken(bytes: number): string {
+  return randomBytes(bytes).toString('base64url');
+}
 
 function file(name: string): string {
   const dir = app.getPath('userData');
@@ -40,7 +50,13 @@ function writeJson(name: string, value: unknown): void {
 }
 
 export function loadSettings(): Settings {
-  return { ...DEFAULT_SETTINGS, ...readJson<Partial<Settings>>('settings.json', {}) };
+  const s = { ...DEFAULT_SETTINGS, ...readJson<Partial<Settings>>('settings.json', {}) };
+  if (!s.roomId || !s.roomKey) {
+    s.roomId = s.roomId || randomToken(9);
+    s.roomKey = s.roomKey || randomToken(18);
+    saveSettings(s);
+  }
+  return s;
 }
 
 export function saveSettings(s: Settings): void {
