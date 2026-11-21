@@ -22,9 +22,9 @@ export async function relaunchAsAdmin(): Promise<boolean> {
 
   if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
     const repoRoot = join(app.getAppPath(), '..');
-    const inner = `Set-Location -LiteralPath ${q(repoRoot)}; npm run dev`;
+    const inner = `Set-Location -LiteralPath ${q(repoRoot)}; npm.cmd run dev`;
     return runPowerShell(
-      `Start-Process -FilePath powershell.exe -Verb RunAs -ArgumentList ${q(`-NoExit -Command "${inner.replace(/"/g, '\\"')}"`)}`
+      `Start-Process -FilePath powershell.exe -Verb RunAs -ArgumentList ${q(`-NoExit -ExecutionPolicy Bypass -Command "${inner.replace(/"/g, '\\"')}"`)}`
     );
   }
 

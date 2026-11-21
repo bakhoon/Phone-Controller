@@ -13,8 +13,8 @@ if (process.platform !== 'win32') {
 }
 
 const q = (s) => `'${s.replace(/'/g, "''")}'`;
-const inner = `Set-Location -LiteralPath ${q(root)}; npm run ${script}`;
-const cmd = `Start-Process -FilePath powershell.exe -Verb RunAs -ArgumentList ${q(`-NoExit -Command "${inner}"`)}`;
+const inner = `Set-Location -LiteralPath ${q(root)}; npm.cmd run ${script}`;
+const cmd = `Start-Process -FilePath powershell.exe -Verb RunAs -ArgumentList ${q(`-NoExit -ExecutionPolicy Bypass -Command "${inner}"`)}`;
 try {
   execFileSync('powershell.exe', ['-NoProfile', '-Command', cmd], { stdio: 'inherit' });
   console.log('관리자 권한 PowerShell 창에서 실행 중이에요.');
