@@ -51,6 +51,8 @@ export interface HostApi {
   listDisplays(): Promise<DisplayInfo[]>;
   disconnectPhone(): Promise<void>;
   copy(text: string): Promise<void>;
+  /** desktopCapturer source id of the monitor chosen in settings (fallback capture). */
+  screenSourceId(): Promise<string | null>;
   /** Put this address in the QR code (e.g. a Tailscale 100.x address). */
   useAddress(address: string): Promise<void>;
   /** Windows: restart with admin rights. Resolves false if the UAC prompt was declined. */

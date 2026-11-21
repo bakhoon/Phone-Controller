@@ -17,13 +17,7 @@ export class Streamer {
     this.stop();
     this.onStatus('starting');
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: {
-          frameRate: { ideal: settings.fps, max: settings.fps },
-          height: { max: settings.maxHeight }
-        },
-        audio: false
-      });
+      const stream = await captureScreen(settings);
       this.stream = stream;
       const track = stream.getVideoTracks()[0];
       track.contentHint = settings.latencyFirst ? 'motion' : 'detail';
@@ -39,7 +33,8 @@ export class Streamer {
       };
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'connected') this.onStatus('streaming');
-        if (pc.connectionState === 'failed') this.onStatus('error', '영상 연결에 실패했어요');
+        if (pc.connectionState === 'failed')
+          this.onStatus('error', '화면은 캡처했는데 폰까지 못 보냈어요. 같은 네트워크인지, 방화벽이 열렸는지 확인하세요');
       };
 
       const offer = await pc.createOffer();
@@ -48,7 +43,7 @@ export class Streamer {
       this.settings = settings;
     } catch (err) {
       console.error('[rtc] start failed', err);
-      this.onStatus('error', '화면 캡처를 시작하지 못했어요');
+      this.onStatus('error', `PC 화면을 캡처하지 못했어요 (${errText(err)})`);
     }
   }
 
@@ -94,6 +89,41 @@ export class Streamer {
     } catch (err) {
       console.warn('[rtc] setParameters failed', err);
     }
+  }
+}
+
+function errText(err: unknown): string {
+  if (err instanceof Error) return `${err.name}: ${err.message}`;
+  return String(err);
+}
+
+/**
+ * Capture the monitor chosen in settings. getDisplayMedia goes through the main
+ * process handler; if that fails on some PCs, fall back to Electron's older
+ * desktop capture with an explicit source id.
+ */
+async function captureScreen(settings: Settings): Promise<MediaStream> {
+  try {
+    return await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: { ideal: settings.fps, max: settings.fps }, height: { max: settings.maxHeight } },
+      audio: false
+    });
+  } catch (first) {
+    console.warn('[rtc] getDisplayMedia failed, trying desktop capture', first);
+    const sourceId = await window.api.screenSourceId();
+    if (!sourceId) throw first;
+    const constraints = {
+      audio: false,
+      video: {
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: sourceId,
+          maxFrameRate: settings.fps,
+          maxHeight: settings.maxHeight
+        }
+      }
+    } as unknown as MediaStreamConstraints;
+    return navigator.mediaDevices.getUserMedia(constraints);
   }
 }
 

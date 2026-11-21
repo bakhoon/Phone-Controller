@@ -37,6 +37,7 @@ export function Home({ state, stream, onNavigate }: Props) {
   if (!state.inputAvailable) notices.push({ level: 'warn', text: '이 PC에서는 키 입력을 보낼 수 없어요 (Windows 전용).' });
   if (connected && state.phone.version !== state.appVersion)
     notices.push({ level: 'warn', text: '폰 화면이 예전 버전이에요. 폰에서 QR을 다시 찍어 주세요.' });
+  if (connected && stream.status === 'error' && stream.detail) notices.push({ level: 'err', text: stream.detail });
   if (connected && state.phoneLog) notices.push({ level: state.phoneLog.level === 'error' ? 'err' : 'info', text: state.phoneLog.message });
 
   return (

@@ -155,6 +155,10 @@ function registerIpc(): void {
     await startServer();
   });
   ipcMain.handle('clipboard:write', (_e, text: string) => clipboard.writeText(text));
+  ipcMain.handle('capture:sourceId', async () => {
+    const sources = await desktopCapturer.getSources({ types: ['screen'] });
+    return (sources.find((s) => s.display_id === settings.displayId) ?? sources[0])?.id ?? null;
+  });
   ipcMain.handle('qr:use', async (_e, address: string) => {
     chosenAddress = address;
     await refreshAddress();
