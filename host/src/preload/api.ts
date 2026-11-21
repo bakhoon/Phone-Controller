@@ -51,6 +51,8 @@ export interface HostApi {
   listDisplays(): Promise<DisplayInfo[]>;
   disconnectPhone(): Promise<void>;
   copy(text: string): Promise<void>;
+  /** Windows: restart with admin rights. Resolves false if the UAC prompt was declined. */
+  relaunchAsAdmin(): Promise<boolean>;
   rtcSend(msg: HostToPhone): void;
   onRtc(cb: (msg: PhoneToHost) => void): Unsubscribe;
   onPhone(cb: (event: 'connected' | 'disconnected') => void): Unsubscribe;

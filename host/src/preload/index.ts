@@ -17,6 +17,7 @@ const api: HostApi = {
   listDisplays: () => ipcRenderer.invoke('displays:list'),
   disconnectPhone: () => ipcRenderer.invoke('phone:disconnect'),
   copy: (text) => ipcRenderer.invoke('clipboard:write', text),
+  relaunchAsAdmin: () => ipcRenderer.invoke('app:relaunchAdmin'),
   rtcSend: (msg) => ipcRenderer.send('rtc:send', msg),
   onRtc: (cb) => on('rtc', cb),
   onPhone: (cb) => on('phone', cb),

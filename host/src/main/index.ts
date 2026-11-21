@@ -7,6 +7,7 @@ import { InputController } from './input';
 import { ControllerServer } from './server';
 import { lanAddresses } from './network';
 import { ensureFirewallRule } from './firewall';
+import { relaunchAsAdmin } from './elevate';
 import { loadLayouts, loadSettings, saveLayouts, saveSettings, type LayoutStore, type Settings } from './store';
 import type { HostState } from '../preload/api';
 
@@ -60,7 +61,16 @@ async function refreshAddress(): Promise<void> {
 async function startServer(): Promise<void> {
   state.serverError = null;
   try {
-    await server.start(settings.port);
+    // Retry briefly: right after "restart as admin" the old instance may still hold the port.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await server.start(settings.port);
+        break;
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'EADDRINUSE' || attempt >= 6) throw err;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    }
   } catch (err) {
     const e = err as NodeJS.ErrnoException;
     state.serverError =
@@ -143,6 +153,14 @@ function registerIpc(): void {
     await startServer();
   });
   ipcMain.handle('clipboard:write', (_e, text: string) => clipboard.writeText(text));
+  ipcMain.handle('app:relaunchAdmin', async () => {
+    const ok = await relaunchAsAdmin();
+    if (ok) {
+      await server.stop();
+      app.quit();
+    }
+    return ok;
+  });
   ipcMain.on('rtc:send', (_e, msg: HostToPhone) => server.send(msg));
 }
 

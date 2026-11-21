@@ -18,6 +18,7 @@ const STREAM_TEXT: Record<StreamStatus, string> = {
 
 export function Home({ state, stream, onNavigate }: Props) {
   const [copied, setCopied] = useState(false);
+  const [elevateMsg, setElevateMsg] = useState('');
   const connected = state.phone.connected;
   const address = state.url.replace('http://', '');
 
@@ -84,6 +85,22 @@ export function Home({ state, stream, onNavigate }: Props) {
                 {notices.map((n, i) => (
                   <p key={i} className={`notice ${n.level}`} style={{ margin: 0 }}>{n.text}</p>
                 ))}
+              </div>
+            )}
+
+            {state.platform === 'win32' && !state.isAdmin && (
+              <div className="row">
+                <button
+                  className="btn primary"
+                  onClick={async () => {
+                    setElevateMsg('');
+                    const ok = await window.api.relaunchAsAdmin();
+                    if (!ok) setElevateMsg('관리자 권한 요청이 취소됐어요.');
+                  }}
+                >
+                  관리자 권한으로 다시 실행
+                </button>
+                {elevateMsg && <span className="hint">{elevateMsg}</span>}
               </div>
             )}
 

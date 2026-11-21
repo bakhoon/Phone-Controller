@@ -13,6 +13,7 @@
     "start": "npm run build:client && npm run start -w host",
     "typecheck": "npm run typecheck -w client && npm run typecheck -w host",
     "build": "npm run build:client && npm run build -w host",
-    "dist": "npm run build:client && npm run dist -w host"
+    "dist": "npm run build:client && npm run dist -w host",
+    "dev:admin": "node scripts/run-as-admin.mjs dev"
   }
 }
