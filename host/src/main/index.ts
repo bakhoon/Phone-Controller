@@ -46,10 +46,12 @@ function pushState(): void {
   win?.webContents.send('state', state);
 }
 
+let chosenAddress = '';
+
 async function refreshAddress(): Promise<void> {
   state.addresses = lanAddresses();
   state.port = settings.port;
-  const host = state.addresses[0] ?? 'localhost';
+  const host = state.addresses.includes(chosenAddress) ? chosenAddress : (state.addresses[0] ?? 'localhost');
   state.url = `http://${host}:${settings.port}`;
   state.qrDataUrl = await QRCode.toDataURL(state.url, {
     margin: 1,
@@ -153,6 +155,11 @@ function registerIpc(): void {
     await startServer();
   });
   ipcMain.handle('clipboard:write', (_e, text: string) => clipboard.writeText(text));
+  ipcMain.handle('qr:use', async (_e, address: string) => {
+    chosenAddress = address;
+    await refreshAddress();
+    pushState();
+  });
   ipcMain.handle('app:relaunchAdmin', async () => {
     const ok = await relaunchAsAdmin();
     if (ok) {

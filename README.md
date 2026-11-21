@@ -84,6 +84,17 @@ netsh advfirewall firewall add rule name="Phone Controller" dir=in action=allow 
 - 공유기의 "AP 격리 / 클라이언트 격리" 기능 끄기
 - PC 앱의 주소 아래에 다른 주소가 보이면 그걸로 시도
 
+## 멀리서 쓰기 (Tailscale)
+
+같은 Wi‑Fi가 아니어도 (카페, 회사, LTE) 쓸 수 있어요. [Tailscale](https://tailscale.com)(개인 무료)을 써요.
+
+1. PC와 iPhone에 Tailscale을 설치하고 **같은 계정**으로 로그인
+2. PC 앱을 관리자 권한으로 켜기 (방화벽에 Tailscale 주소도 허용돼요)
+3. PC 앱 메인 화면의 "다른 주소로 QR 만들기"에서 `100.x.x.x (Tailscale, 멀리서)` 누르기
+4. iPhone에서 Tailscale을 켠 상태로 QR 찍기
+
+내 계정에 로그인한 기기만 접속할 수 있어요. 인터넷을 거치니까 같은 Wi‑Fi보다 지연은 늘어나요.
+
 ## 테스트 순서 (추천)
 
 1. **메모장**: 메모장을 띄우고 폰에서 Q, 방향키를 눌러 글자가 들어가는지 확인

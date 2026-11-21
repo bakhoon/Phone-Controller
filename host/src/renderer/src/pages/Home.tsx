@@ -76,7 +76,16 @@ export function Home({ state, stream, onNavigate }: Props) {
                 <button className="btn small" onClick={copy}>{copied ? '복사함' : '복사'}</button>
               </div>
               {state.addresses.length > 1 && (
-                <span className="hint">안 열리면: {state.addresses.slice(1).map((a) => `${a}:${state.port}`).join(', ')}</span>
+                <div className="row" style={{ marginTop: 4 }}>
+                  <span className="hint">다른 주소로 QR 만들기:</span>
+                  {state.addresses
+                    .filter((a) => a !== address.split(':')[0])
+                    .map((a) => (
+                      <button key={a} className="btn small" onClick={() => void window.api.useAddress(a)}>
+                        {a.startsWith('100.') ? `${a} (Tailscale, 멀리서)` : a}
+                      </button>
+                    ))}
+                </div>
               )}
             </div>
 
