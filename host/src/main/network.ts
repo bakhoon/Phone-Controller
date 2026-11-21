@@ -17,6 +17,8 @@ export function lanAddresses(): string[] {
       let score = 0;
       if (isPrivate(a.address)) score += 2;
       if (a.address.startsWith('192.168.')) score += 1;
+      // iPhone Personal Hotspot (Wi-Fi or USB) always uses 172.20.10.x: the phone is right there.
+      if (a.address.startsWith('172.20.10.')) score += 5;
       if (/wi-?fi|wlan|ethernet|이더넷/i.test(name)) score += 2;
       if (VIRTUAL.test(name)) score -= 5;
       found.push({ ip: a.address, score });
