@@ -11,12 +11,19 @@ import { relaunchAsAdmin } from './elevate';
 import { loadLayouts, loadSettings, saveLayouts, saveSettings, type LayoutStore, type Settings } from './store';
 import type { HostState } from '../preload/api';
 
-// Chromium hides local IPs behind random .local (mDNS) names in WebRTC.
-// iPhones often can't resolve those on home routers, so send real LAN IPs.
-app.commandLine.appendSwitch('disable-features', 'WebRtcHideLocalIpsWithMdns');
-
 let win: BrowserWindow | null = null;
 let settings: Settings = loadSettings();
+
+// Chromium hides local IPs behind random .local (mDNS) names in WebRTC.
+// iPhones often can't resolve those on home routers, so send real LAN IPs.
+const disabledFeatures = ['WebRtcHideLocalIpsWithMdns'];
+// Some PCs fail to start Windows Graphics Capture ("Could not start video source").
+// Compatibility mode falls back to the older DXGI capturer, optionally without the GPU.
+if (settings.captureMode !== 'auto') {
+  disabledFeatures.push('AllowWgcScreenCapturer', 'AllowWgcDesktopCapturer', 'AllowWgcWindowCapturer');
+}
+if (settings.captureMode === 'compat-nogpu') app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-features', disabledFeatures.join(','));
 let layouts: LayoutStore = loadLayouts();
 
 const input = new InputController();
@@ -37,6 +44,7 @@ const state: HostState = {
   rtt: null,
   inputAvailable: input.available,
   isAdmin: false,
+  captureMode: settings.captureMode,
   firewallOk: null,
   phoneLog: null,
   platform: process.platform
@@ -155,6 +163,13 @@ function registerIpc(): void {
     await startServer();
   });
   ipcMain.handle('clipboard:write', (_e, text: string) => clipboard.writeText(text));
+  ipcMain.handle('app:restartCapture', async (_e, mode: Settings['captureMode']) => {
+    settings = { ...settings, captureMode: mode };
+    saveSettings(settings);
+    await server.stop();
+    app.relaunch();
+    app.exit(0);
+  });
   ipcMain.handle('capture:sourceId', async () => {
     const sources = await desktopCapturer.getSources({ types: ['screen'] });
     return (sources.find((s) => s.display_id === settings.displayId) ?? sources[0])?.id ?? null;

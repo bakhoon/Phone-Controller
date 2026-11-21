@@ -12,14 +12,22 @@ export interface Settings {
   fps: 30 | 60;
   maxHeight: 720 | 1080;
   latencyFirst: boolean;
+  /**
+   * How Chromium captures the screen. 'auto' = default (Windows Graphics Capture).
+   * 'compat' = older DXGI capture. 'compat-nogpu' = also turn off GPU acceleration.
+   * Applied at startup.
+   */
+  captureMode: CaptureMode;
 }
+
+export type CaptureMode = 'auto' | 'compat' | 'compat-nogpu';
 
 export interface LayoutStore {
   active: number;
   items: Layout[];
 }
 
-const DEFAULT_SETTINGS: Settings = { port: 8080, displayId: '', fps: 60, maxHeight: 1080, latencyFirst: true };
+const DEFAULT_SETTINGS: Settings = { port: 8080, displayId: '', fps: 60, maxHeight: 1080, latencyFirst: true, captureMode: 'auto' };
 
 function file(name: string): string {
   const dir = app.getPath('userData');

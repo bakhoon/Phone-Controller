@@ -81,6 +81,25 @@ export function SettingsPage({ settings, onSave, onBack }: Props) {
               ))}
             </div>
           </div>
+          <div className="col">
+            <label htmlFor="capture">캡처 방식</label>
+            <select
+              id="capture"
+              className="field"
+              style={{ maxWidth: 360 }}
+              value={draft.captureMode}
+              onChange={async (e) => {
+                const mode = e.target.value as Settings['captureMode'];
+                if (mode === settings.captureMode) return;
+                if (!window.confirm('캡처 방식을 바꾸려면 앱을 다시 시작해야 해요. 지금 다시 시작할까요?')) return;
+                await window.api.restartWithCaptureMode(mode);
+              }}
+            >
+              <option value="auto">기본</option>
+              <option value="compat">호환 모드 (화면이 안 나올 때)</option>
+              <option value="compat-nogpu">호환 모드 + GPU 끔 (그래도 안 될 때)</option>
+            </select>
+          </div>
           <div className="setting-row">
             <div className="col" style={{ gap: 2 }}>
               <span style={{ fontWeight: 500 }}>지연 우선</span>

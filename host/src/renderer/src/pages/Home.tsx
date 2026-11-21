@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { HostState } from '../../../preload/api';
+import type { CaptureMode, HostState } from '../../../preload/api';
 import type { Page, StreamStatus } from '../App';
 import { IconGear } from '../icons';
 
@@ -8,6 +8,11 @@ interface Props {
   stream: { status: StreamStatus; detail?: string };
   onNavigate: (p: Page) => void;
 }
+
+const NEXT_CAPTURE: Partial<Record<CaptureMode, { mode: CaptureMode; label: string }>> = {
+  auto: { mode: 'compat', label: '호환 모드로 다시 시작' },
+  compat: { mode: 'compat-nogpu', label: 'GPU 끄고 다시 시작' }
+};
 
 const STREAM_TEXT: Record<StreamStatus, string> = {
   idle: '화면 대기',
@@ -95,6 +100,23 @@ export function Home({ state, stream, onNavigate }: Props) {
                 {notices.map((n, i) => (
                   <p key={i} className={`notice ${n.level}`} style={{ margin: 0 }}>{n.text}</p>
                 ))}
+              </div>
+            )}
+
+            {connected && stream.status === 'error' && stream.detail?.startsWith('PC 화면을 캡처') && (
+              <div className="col" style={{ gap: 6 }}>
+                {NEXT_CAPTURE[state.captureMode] ? (
+                  <>
+                    <p className="hint">이 PC에서 기본 캡처 방식이 안 되는 경우가 있어요. 다른 방식으로 다시 켜 볼게요.</p>
+                    <div className="row">
+                      <button className="btn primary" onClick={() => void window.api.restartWithCaptureMode(NEXT_CAPTURE[state.captureMode]!.mode)}>
+                        {NEXT_CAPTURE[state.captureMode]!.label}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="hint">모든 캡처 방식을 써 봤어요. 다른 화면 녹화 프로그램이 켜져 있으면 끄고, 그래픽 드라이버를 업데이트해 보세요.</p>
+                )}
               </div>
             )}
 

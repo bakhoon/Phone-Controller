@@ -9,7 +9,10 @@ export interface Settings {
   fps: 30 | 60;
   maxHeight: 720 | 1080;
   latencyFirst: boolean;
+  captureMode: CaptureMode;
 }
+
+export type CaptureMode = 'auto' | 'compat' | 'compat-nogpu';
 
 export interface LayoutStore {
   active: number;
@@ -27,6 +30,7 @@ export interface HostState {
   rtt: number | null;
   inputAvailable: boolean;
   isAdmin: boolean;
+  captureMode: CaptureMode;
   /** Windows Firewall rule added (null = not checked / not Windows). */
   firewallOk: boolean | null;
   /** Last status / error message reported by the phone. */
@@ -51,6 +55,8 @@ export interface HostApi {
   listDisplays(): Promise<DisplayInfo[]>;
   disconnectPhone(): Promise<void>;
   copy(text: string): Promise<void>;
+  /** Save a new capture mode and restart the app so it takes effect. */
+  restartWithCaptureMode(mode: CaptureMode): Promise<void>;
   /** desktopCapturer source id of the monitor chosen in settings (fallback capture). */
   screenSourceId(): Promise<string | null>;
   /** Put this address in the QR code (e.g. a Tailscale 100.x address). */
