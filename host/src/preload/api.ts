@@ -9,9 +9,6 @@ export interface Settings {
   fps: 30 | 60;
   maxHeight: 720 | 1080;
   latencyFirst: boolean;
-  relayUrl: string;
-  roomId: string;
-  roomKey: string;
 }
 
 export interface LayoutStore {
@@ -19,20 +16,13 @@ export interface LayoutStore {
   items: Layout[];
 }
 
-export type QrMode = 'local' | 'remote';
-
 export interface HostState {
-  /** What the QR code points to. */
   url: string;
-  /** Same-Wi‑Fi address, e.g. http://192.168.0.12:8080 */
-  localUrl: string;
-  qrMode: QrMode;
-  remote: { configured: boolean; status: 'off' | 'connecting' | 'online' | 'error' };
   addresses: string[];
   port: number;
   qrDataUrl: string;
   serverError: string | null;
-  phone: { connected: boolean; ua: string; address: string; version: string; kind: 'local' | 'remote' | '' };
+  phone: { connected: boolean; ua: string; address: string; version: string };
   appVersion: string;
   rtt: number | null;
   inputAvailable: boolean;
@@ -63,11 +53,6 @@ export interface HostApi {
   copy(text: string): Promise<void>;
   /** Put this address in the QR code (e.g. a Tailscale 100.x address). */
   useAddress(address: string): Promise<void>;
-  setQrMode(mode: QrMode): Promise<void>;
-  /** Make a new room key; old QR codes and bookmarks stop working. */
-  newRoomKey(): Promise<Settings>;
-  /** Input that arrived over the WebRTC data channel. */
-  phoneDcMessage(msg: PhoneToHost): void;
   /** Windows: restart with admin rights. Resolves false if the UAC prompt was declined. */
   relaunchAsAdmin(): Promise<boolean>;
   rtcSend(msg: HostToPhone): void;

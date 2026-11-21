@@ -5,5 +5,3 @@ release/
 *.log
 .DS_Store
 .vite/
-.wrangler/
-.dev.vars

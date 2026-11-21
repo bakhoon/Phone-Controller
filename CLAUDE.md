@@ -16,13 +16,11 @@ PC 화면을 폰으로 스트리밍하고, 폰 화면 위의 터치 버튼/터�
 ## 구조
 - `shared/`: 레이아웃 타입(`layout.ts`), WebSocket 메시지(`protocol.ts`), 키 목록(`keys.ts`). host와 client 둘 다 `@shared/*` alias로 import
 - `host/`: Electron (electron-vite). `src/main`(서버, SendInput, 저장), `src/preload`(window.api), `src/renderer`(React PC 화면 + WebRTC 송신)
-- `client/`: React + Vite 폰 웹앱. 빌드 결과(`client/dist`)를 host가 같은 포트로 서빙 (같은 Wi‑Fi), Cloudflare relay도 같은 파일을 서빙 (멀리서)
-- `relay/`: Cloudflare Worker + Durable Object. 방(room) 단위로 PC와 폰의 메시지를 그대로 전달. 폰은 방 키가 맞아야 들어옴
+- `client/`: React + Vite 폰 웹앱. 빌드 결과(`client/dist`)를 host가 같은 포트로 서빙
 
 ## 기술 결정
 - 영상: WebRTC. renderer에서 `getDisplayMedia` (main의 `setDisplayMediaRequestHandler`가 모니터 선택). 코덱은 H.264 우선
-- 연결: 같은 Wi‑Fi는 PC의 WebSocket(`/ws`), 멀리서는 Cloudflare relay WebSocket. 둘 다 `host/src/main/hub.ts`가 "지금 조종하는 폰" 하나를 관리
-- 입력: WebRTC가 연결되면 DataChannel로 직접 보냄 (안 되면 WebSocket). STUN은 Cloudflare/Google 공개 서버, TURN 없음
+- 입력/레이아웃/핑/시그널링: WebSocket (`/ws`), 같은 Wi‑Fi. 서버는 `0.0.0.0`에서 listen, 폰은 `location.host`로 접속
 - 입력 실행: Windows `SendInput`을 **스캔코드 방식**으로 호출 (`koffi`). Windows가 아니면 콘솔 로그만
 - 레이아웃 좌표는 기준 크기 844×390 (가로 iPhone)에서의 중심 좌표. 폰이 화면에 맞게 확대/축소
 - 설정과 레이아웃은 Electron userData 폴더의 `settings.json`, `layouts.json`

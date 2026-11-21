@@ -20,7 +20,6 @@ Node.js나 npm이 없어도 돼요. 폰은 설치할 것 없이 QR만 찍으면 
 ```
 phone-controller/
 ├─ shared/     # 폰과 PC가 같이 쓰는 타입 (레이아웃, 메시지, 키 목록)
-├─ relay/      # Cloudflare 중계 서버 (멀리서 연결) + 폰 웹앱 호스팅
 ├─ host/       # PC 앱 (Electron)
 │  └─ src/
 │     ├─ main/       # 서버, SendInput 키 입력, QR, 저장
@@ -85,35 +84,16 @@ netsh advfirewall firewall add rule name="Phone Controller" dir=in action=allow 
 - 공유기의 "AP 격리 / 클라이언트 격리" 기능 끄기
 - PC 앱의 주소 아래에 다른 주소가 보이면 그걸로 시도
 
-## 멀리서 쓰기 (와이파이가 달라도)
+## 멀리서 쓰기 (Tailscale)
 
-Cloudflare(무료)에 작은 중계 서버를 올리면, 폰과 PC가 다른 네트워크에 있어도 (카페, LTE, 회사) 연결돼요.
-중계 서버는 처음 연결만 도와주고, 화면 영상과 버튼 입력은 폰과 PC가 직접 주고받아요.
+같은 Wi‑Fi가 아니어도 (카페, 회사, LTE) 쓸 수 있어요. [Tailscale](https://tailscale.com)(개인 무료)을 써요.
 
-### 처음 한 번: 중계 서버 올리기
+1. PC와 iPhone에 Tailscale을 설치하고 **같은 계정**으로 로그인
+2. PC 앱을 관리자 권한으로 켜기 (방화벽에 Tailscale 주소도 허용돼요)
+3. PC 앱 메인 화면의 "다른 주소로 QR 만들기"에서 `100.x.x.x (Tailscale, 멀리서)` 누르기
+4. iPhone에서 Tailscale을 켠 상태로 QR 찍기
 
-1. [Cloudflare](https://dash.cloudflare.com/sign-up) 무료 계정 만들기
-2. 이 폴더에서:
-   ```
-   cd relay
-   npx wrangler login
-   cd ..
-   npm run deploy:relay
-   ```
-3. 마지막에 나오는 주소를 복사해요 (예: `https://phone-controller.내계정.workers.dev`)
-4. PC 앱 → 설정 → **멀리서 연결** → 주소 붙여넣기 → 저장
-
-### 쓸 때
-
-1. PC 앱 메인 화면에서 **어디서나** 를 누르고 QR 찍기
-2. Safari에서 "홈 화면에 추가" 해 두면 다음부터는 아이콘만 누르면 돼요 (PC 앱만 켜져 있으면 어디서든)
-
-### 알아둘 것
-
-- 이 QR 안에 이 PC의 비밀 연결 키가 들어 있어요. 남한테 알려졌으면 설정에서 **연결 키 새로 만들기**
-- 일부 네트워크(회사, 일부 LTE)는 폰과 PC의 직접 연결을 막아서 영상이 안 나올 수 있어요. 이때 PC 앱에 "영상 연결 실패"가 떠요
-- 폰 화면 코드를 바꿨으면 `npm run deploy:relay`를 다시 해야 Cloudflare 쪽 폰 화면도 새 버전이 돼요
-- Tailscale을 쓰고 있다면 그 방법도 그대로 돼요 (메인 화면의 "다른 주소로 QR 만들기"에서 100.x 주소)
+내 계정에 로그인한 기기만 접속할 수 있어요. 인터넷을 거치니까 같은 Wi‑Fi보다 지연은 늘어나요.
 
 ## 테스트 순서 (추천)
 

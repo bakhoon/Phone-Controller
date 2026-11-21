@@ -1,7 +1,7 @@
 // Captures the PC screen and sends it to the phone over WebRTC.
 // Signaling (offer / answer / ICE) goes through the main process WebSocket.
 
-import { ICE_SERVERS, type IceCandidate, type PhoneToHost } from '@shared/protocol';
+import type { IceCandidate, PhoneToHost } from '@shared/protocol';
 import type { Settings } from '../../preload/api';
 
 type SendParams = RTCRtpSendParameters & { degradationPreference?: string };
@@ -28,26 +28,11 @@ export class Streamer {
       const track = stream.getVideoTracks()[0];
       track.contentHint = settings.latencyFirst ? 'motion' : 'detail';
 
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      const pc = new RTCPeerConnection({ iceServers: [] });
       this.pc = pc;
       const transceiver = pc.addTransceiver(track, { direction: 'sendonly', streams: [stream] });
       this.sender = transceiver.sender;
       preferH264(transceiver);
-
-      // Input from the phone comes over this channel once connected: lower latency
-      // than the WebSocket, and direct even when signaling goes through the relay.
-      const dc = pc.createDataChannel('input', { ordered: true });
-      dc.onmessage = (ev) => {
-        let msg: PhoneToHost;
-        try {
-          msg = JSON.parse(String(ev.data)) as PhoneToHost;
-        } catch {
-          return;
-        }
-        // Answer pings right here so the phone measures the real input path.
-        if (msg.t === 'ping') dc.send(JSON.stringify({ t: 'pong', ts: msg.ts }));
-        else window.api.phoneDcMessage(msg);
-      };
 
       pc.onicecandidate = (e) => {
         if (e.candidate) window.api.rtcSend({ t: 'rtc-ice', candidate: e.candidate.toJSON() as IceCandidate });

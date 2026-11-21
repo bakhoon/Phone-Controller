@@ -20,12 +20,10 @@ export function Home({ state, stream, onNavigate }: Props) {
   const [copied, setCopied] = useState(false);
   const [elevateMsg, setElevateMsg] = useState('');
   const connected = state.phone.connected;
-  const address = state.localUrl.replace('http://', '');
-  const remoteMode = state.qrMode === 'remote';
-  const RELAY_TEXT = { off: '꺼짐', connecting: '연결하는 중', online: '준비됨', error: '연결 안 됨 (설정의 주소를 확인하세요)' } as const;
+  const address = state.url.replace('http://', '');
 
   const copy = async () => {
-    await window.api.copy(state.localUrl);
+    await window.api.copy(state.url);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -60,28 +58,18 @@ export function Home({ state, stream, onNavigate }: Props) {
           <div className="home-info">
             <h2>{connected ? '폰이 연결됐어요' : '폰 카메라로 QR을 찍으세요'}</h2>
 
-            {state.remote.configured && (
-              <div className="seg" role="group" aria-label="연결 방식">
-                <button aria-pressed={!remoteMode} onClick={() => void window.api.setQrMode('local')}>같은 Wi‑Fi</button>
-                <button aria-pressed={remoteMode} onClick={() => void window.api.setQrMode('remote')}>어디서나</button>
-              </div>
-            )}
-
             <div className="status">
               <span className={`dot ${connected ? 'on' : ''} ${connected && stream.status === 'error' ? 'err' : ''}`} />
               {connected ? (
                 <span>
-                  {state.phone.kind === 'remote' ? '인터넷으로 연결' : '같은 Wi‑Fi로 연결'}, {STREAM_TEXT[stream.status]}, 지연{' '}
-                  <span className="latency">{state.rtt !== null ? `${state.rtt}ms` : '-'}</span>
+                  {STREAM_TEXT[stream.status]}, 지연 <span className="latency">{state.rtt !== null ? `${state.rtt}ms` : '-'}</span>
                 </span>
-              ) : remoteMode ? (
-                <span>와이파이가 달라도 돼요. 중계 서버: {RELAY_TEXT[state.remote.status]}</span>
               ) : (
                 <span>PC와 같은 Wi‑Fi에서 찍어야 해요</span>
               )}
             </div>
 
-            {!remoteMode && <div className="col" style={{ gap: 4 }}>
+            <div className="col" style={{ gap: 4 }}>
               <span className="label">또는 폰 브라우저에 직접 입력</span>
               <div className="row">
                 <span className="addr">{address}</span>
@@ -99,11 +87,7 @@ export function Home({ state, stream, onNavigate }: Props) {
                     ))}
                 </div>
               )}
-            </div>}
-
-            {!state.remote.configured && (
-              <p className="hint">밖에서도 쓰려면 설정에서 "멀리서 연결"을 켜세요.</p>
-            )}
+            </div>
 
             {notices.length > 0 && (
               <div className="col" style={{ gap: 8 }}>

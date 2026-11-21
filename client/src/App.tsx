@@ -38,5 +38,5 @@ export function App() {
   if (status === 'connected' && layout && conn.current) {
     return <Controller layout={layout} conn={conn.current} stream={stream} rtt={rtt} />;
   }
-  return <ConnectScreen status={status} remote={!!conn.current?.remote} onRetry={() => conn.current?.retry()} />;
+  return <ConnectScreen status={status} onRetry={() => conn.current?.retry()} />;
 }
