@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { HostState, LayoutStore, Settings } from '../../preload/api';
+import { hasScreen } from '@shared/layout';
 import { Streamer } from './rtc';
 import { Home } from './pages/Home';
 import { LayoutEditor } from './pages/LayoutEditor';
@@ -20,6 +21,12 @@ export function App() {
   const streamer = useRef<Streamer | null>(null);
   const settingsRef = useRef<Settings | null>(null);
   settingsRef.current = settings;
+  const layoutsRef = useRef<LayoutStore | null>(null);
+  layoutsRef.current = layouts;
+  const connectedRef = useRef(false);
+
+  /** Stream only when the active layout shows the PC screen. */
+  const wantsVideo = (store: LayoutStore | null) => !!store && hasScreen(store.items[store.active]);
 
   useEffect(() => {
     const s = new Streamer();
@@ -33,7 +40,8 @@ export function App() {
     const offs = [
       window.api.onState(setState),
       window.api.onPhone((ev) => {
-        if (ev === 'connected' && settingsRef.current) void s.start(settingsRef.current);
+        connectedRef.current = ev === 'connected';
+        if (ev === 'connected' && settingsRef.current && wantsVideo(layoutsRef.current)) void s.start(settingsRef.current);
         if (ev === 'disconnected') {
           s.stop();
           setPressed(new Set());
@@ -60,12 +68,18 @@ export function App() {
     await window.api.saveSettings(next);
     setSettings(next);
     // Restart the stream so new capture settings take effect.
-    if (state?.phone.connected) void streamer.current?.start(next);
+    if (state?.phone.connected && wantsVideo(layouts)) void streamer.current?.start(next);
   };
 
   const saveLayouts = async (next: LayoutStore) => {
     await window.api.saveLayouts(next);
+    const before = wantsVideo(layouts);
+    const after = wantsVideo(next);
     setLayouts(next);
+    if (connectedRef.current && before !== after) {
+      if (after && settings) void streamer.current?.start(settings);
+      else streamer.current?.stop();
+    }
   };
 
   if (!state || !layouts || !settings) {

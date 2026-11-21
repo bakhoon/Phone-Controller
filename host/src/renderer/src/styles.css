@@ -122,3 +122,4 @@ label, .label { font-size: 13px; color: var(--sub); }
 .kv { display: flex; justify-content: space-between; align-items: baseline; }
 .kv .v { font-size: 13px; color: var(--text); font-variant-numeric: tabular-nums; }
 .chip { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: var(--bg); }
+.palette button:disabled { opacity: 0.4; cursor: default; background: transparent; border-color: transparent; }

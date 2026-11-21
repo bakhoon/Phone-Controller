@@ -11,11 +11,12 @@ import {
   type ScreenWidget,
   type StickWidget,
   type Widget,
-  DEFAULT_STICK_KEYS
+  DEFAULT_STICK_KEYS,
+  newScreen
 } from '@shared/layout';
 import { KEY_OPTIONS, keyLabel } from '@shared/keys';
 import type { HostState, LayoutStore } from '../../../preload/api';
-import { IconArrows, IconBack, IconMouse, IconPad, IconStick } from '../icons';
+import { IconArrows, IconBack, IconLayout, IconMouse, IconPad, IconStick } from '../icons';
 
 interface Props {
   store: LayoutStore;
@@ -272,6 +273,22 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
               <span className="hint" style={{ fontSize: 12 }}>돌려서 8방향 이동</span>
             </span>
           </button>
+          <button
+            disabled={layout.widgets.some((w) => w.kind === 'screen')}
+            title={layout.widgets.some((w) => w.kind === 'screen') ? 'PC 화면은 하나만 넣을 수 있어요' : undefined}
+            onClick={() => {
+              // Keep the screen at the back so it never covers buttons.
+              updateWidgets((ws) => [newScreen(), ...ws]);
+              setSelId('screen');
+            }}
+          >
+            <IconLayout />
+            <span>
+              PC 화면
+              <br />
+              <span className="hint" style={{ fontSize: 12 }}>없으면 버튼만 보여요</span>
+            </span>
+          </button>
           <button onClick={() => add([newKey('클릭', 'MouseLeft', 'circle', 70, REF_W / 2, REF_H / 2)])}>
             <IconMouse /> 마우스 클릭
           </button>
@@ -352,6 +369,17 @@ export function LayoutEditor({ store, state, pressed, lastInput, onSave, onBack 
               center={() => patch(sel.id, { x: REF_W / 2, y: REF_H / 2 })}
             />
           )}
+          {sel && sel.kind === 'screen' && (
+            <button
+              className="btn danger"
+              onClick={() => {
+                updateWidgets((ws) => ws.filter((w) => w.id !== sel.id));
+                setSelId(null);
+              }}
+            >
+              PC 화면 빼기 (버튼만 쓰기)
+            </button>
+          )}
           {sel && sel.kind !== 'screen' && (
             <>
               <Range
@@ -403,10 +431,11 @@ function WidgetView({ w, selected, live, onDown, onHandleDown, onMove, onUp, onF
   if (w.kind === 'key') {
     faceStyle = {
       borderRadius: w.shape === 'circle' ? '50%' : 14,
-      background: selected ? 'rgba(111,140,255,0.35)' : `rgba(255,255,255,${w.opacity})`,
-      fontSize: Math.max(12, Math.round(w.size * 0.3))
+      backgroundColor: selected ? 'rgba(111,140,255,0.35)' : `rgba(255,255,255,${w.opacity})`,
+      fontSize: Math.max(12, Math.round(w.size * 0.3)),
+      ...(w.image ? { backgroundImage: `url(${w.image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {})
     };
-    content = w.label;
+    content = w.image ? null : w.label;
     aria = `${w.label} 버튼 (${keyLabel(w.key)})`;
   } else if (w.kind === 'stick') {
     faceStyle = { borderRadius: '50%', background: selected ? 'rgba(111,140,255,0.3)' : `rgba(255,255,255,${w.opacity})` };
@@ -539,7 +568,59 @@ function KeyPanel({ w, patch }: { w: KeyWidget; patch: (p: Partial<KeyWidget>) =
           <button style={{ flex: 1 }} aria-pressed={w.shape === 'square'} onClick={() => patch({ shape: 'square' })}>사각형</button>
         </div>
       </div>
+      <ImagePicker image={w.image} onChange={(image) => patch({ image })} />
     </>
+  );
+}
+
+/** Shrink a picked image to a small square-ish icon so layouts stay light to send to the phone. */
+async function fileToIcon(file: File): Promise<string> {
+  const bmp = await createImageBitmap(file);
+  const max = 160;
+  const s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(bmp.width * s));
+  c.height = Math.max(1, Math.round(bmp.height * s));
+  c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height);
+  bmp.close();
+  return c.toDataURL('image/webp', 0.85);
+}
+
+function ImagePicker({ image, onChange }: { image?: string; onChange: (image: string | undefined) => void }) {
+  const [error, setError] = useState('');
+  return (
+    <div className="col">
+      <span className="label">그림 (스킬 아이콘 등)</span>
+      <div className="row">
+        {image && <img src={image} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line)' }} />}
+        <label className="btn small" style={{ cursor: 'pointer' }}>
+          {image ? '바꾸기' : '그림 넣기'}
+          <input
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file) return;
+              try {
+                setError('');
+                onChange(await fileToIcon(file));
+              } catch {
+                setError('이 파일은 그림으로 쓸 수 없어요. PNG나 JPG를 골라 주세요.');
+              }
+            }}
+          />
+        </label>
+        {image && (
+          <button className="btn small danger" onClick={() => onChange(undefined)}>
+            빼기
+          </button>
+        )}
+      </div>
+      {image && <span className="hint">그림이 있으면 버튼 글자 대신 그림이 보여요.</span>}
+      {error && <span className="hint" style={{ color: 'var(--err)' }}>{error}</span>}
+    </div>
   );
 }
 

@@ -293,15 +293,19 @@ export function Controller({ layout, conn, stream, rtt }: Props) {
             <button
               key={w.id}
               type="button"
-              className={`key ${w.shape} ${live.has(w.id) ? 'down' : ''}`}
+              className={`key ${w.shape} ${live.has(w.id) ? 'down' : ''} ${w.image ? 'img' : ''}`}
               aria-label={w.label}
-              style={{ ...r, background: live.has(w.id) ? undefined : `rgba(255,255,255,${w.opacity})`, fontSize: Math.max(11, r.width * 0.3) }}
+              style={
+                w.image
+                  ? { ...r, backgroundImage: `url(${w.image})` }
+                  : { ...r, background: live.has(w.id) ? undefined : `rgba(255,255,255,${w.opacity})`, fontSize: Math.max(11, r.width * 0.3) }
+              }
               onPointerDown={(e) => keyDown(w, e)}
               onPointerUp={(e) => keyUp(w, e)}
               onPointerCancel={(e) => keyUp(w, e)}
               onContextMenu={(e) => e.preventDefault()}
             >
-              {w.label}
+              {w.image ? null : w.label}
             </button>
           );
         }

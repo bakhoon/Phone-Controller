@@ -22,6 +22,8 @@ export interface KeyWidget {
   y: number;
   /** Background opacity, 0..1. */
   opacity: number;
+  /** Optional picture shown on the button (small data: URL, e.g. a skill icon). */
+  image?: string;
 }
 
 export interface PadWidget {
@@ -124,12 +126,25 @@ export function defaultLayout(name = '메이플 기본'): Layout {
   };
 }
 
-/** Make sure a layout loaded from disk / the network has a screen widget. */
+/** A layout without a screen widget is a controller-only layout (no video). */
+export function hasScreen(l: Layout): boolean {
+  return l.widgets.some((w) => w.kind === 'screen');
+}
+
+export function newScreen(): ScreenWidget {
+  return { id: 'screen', kind: 'screen', w: REF_W, h: REF_H, x: REF_W / 2, y: REF_H / 2, lockAspect: false };
+}
+
+/** Clean up a layout loaded from disk / the network: keep at most one screen widget. */
 export function normalizeLayout(l: Layout): Layout {
-  const hasScreen = l.widgets.some((w) => w.kind === 'screen');
-  if (hasScreen) return l;
+  let seen = false;
   return {
     ...l,
-    widgets: [{ id: 'screen', kind: 'screen', w: REF_W, h: REF_H, x: REF_W / 2, y: REF_H / 2, lockAspect: false }, ...l.widgets]
+    widgets: l.widgets.filter((w) => {
+      if (w.kind !== 'screen') return true;
+      if (seen) return false;
+      seen = true;
+      return true;
+    })
   };
 }
