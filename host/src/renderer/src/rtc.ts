@@ -102,7 +102,7 @@ function errText(err: unknown): string {
  * process handler; if that fails on some PCs, fall back to Electron's older
  * desktop capture with an explicit source id.
  */
-async function captureScreen(settings: Settings): Promise<MediaStream> {
+export async function captureScreen(settings: Settings): Promise<MediaStream> {
   try {
     return await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: { ideal: settings.fps, max: settings.fps }, height: { max: settings.maxHeight } },

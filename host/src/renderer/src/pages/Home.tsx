@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { captureScreen } from '../rtc';
 import type { CaptureMode, HostState } from '../../../preload/api';
 import type { Page, StreamStatus } from '../App';
 import { IconGear } from '../icons';
@@ -120,6 +121,27 @@ export function Home({ state, stream, onNavigate }: Props) {
               </div>
             )}
 
+            {state.gpuPref === 'high' && (
+              <div className="col" style={{ gap: 6 }}>
+                <p className="notice warn" style={{ margin: 0 }}>
+                  이 앱이 Windows 그래픽 설정에서 고성능 GPU로 지정돼 있어요. 그래픽 카드가 두 개인 PC에서는 이러면 화면 캡처가 안 될 수 있어요.
+                </p>
+                <div className="row">
+                  <button
+                    className="btn primary"
+                    onClick={async () => {
+                      const ok = await window.api.fixGpu();
+                      if (!ok) setElevateMsg('바꾸지 못했어요. Windows 설정 > 디스플레이 > 그래픽에서 직접 바꿔 주세요.');
+                    }}
+                  >
+                    절전 GPU로 바꾸고 다시 시작
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <CaptureTest />
+
             {state.platform === 'win32' && !state.isAdmin && (
               <div className="row">
                 <button
@@ -146,5 +168,62 @@ export function Home({ state, stream, onNavigate }: Props) {
         </div>
       </main>
     </>
+  );
+}
+
+/** Try capturing the PC screen right here, without a phone. */
+function CaptureTest() {
+  const [status, setStatus] = useState<'idle' | 'running' | 'ok' | 'fail'>('idle');
+  const [error, setError] = useState('');
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const stop = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setStatus('idle');
+  };
+  useEffect(() => stop, []);
+
+  const run = async () => {
+    stop();
+    setStatus('running');
+    setError('');
+    try {
+      const settings = await window.api.getSettings();
+      const stream = await captureScreen(settings);
+      streamRef.current = stream;
+      setStatus('ok');
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          void videoRef.current.play();
+        }
+      });
+    } catch (err) {
+      setStatus('fail');
+      setError(err instanceof Error ? `${err.name}: ${err.message}` : String(err));
+    }
+  };
+
+  return (
+    <div className="col" style={{ gap: 8 }}>
+      <div className="row">
+        {status === 'ok' ? (
+          <button className="btn" onClick={stop}>테스트 끝내기</button>
+        ) : (
+          <button className="btn" disabled={status === 'running'} onClick={() => void run()}>
+            {status === 'running' ? '캡처 시도 중...' : '화면 캡처 테스트 (폰 없이)'}
+          </button>
+        )}
+      </div>
+      {status === 'ok' && (
+        <>
+          <p className="notice info" style={{ margin: 0, color: 'var(--ok)' }}>화면 캡처가 돼요. 폰에서 안 나오면 네트워크 쪽 문제예요.</p>
+          <video ref={videoRef} muted playsInline style={{ width: 320, borderRadius: 8, border: '1px solid var(--line)', background: '#000' }} />
+        </>
+      )}
+      {status === 'fail' && <p className="notice err" style={{ margin: 0 }}>캡처 실패: {error}</p>}
+    </div>
   );
 }

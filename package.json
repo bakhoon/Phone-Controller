@@ -1,7 +1,7 @@
 {
   "name": "phone-controller",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Use an iPhone as a touch controller for a Windows PC: stream the PC screen to the phone and send key/mouse input back.",
   "workspaces": [
     "client",

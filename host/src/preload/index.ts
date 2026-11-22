@@ -18,6 +18,7 @@ const api: HostApi = {
   disconnectPhone: () => ipcRenderer.invoke('phone:disconnect'),
   copy: (text) => ipcRenderer.invoke('clipboard:write', text),
   restartWithCaptureMode: (mode) => ipcRenderer.invoke('app:restartCapture', mode),
+  fixGpu: () => ipcRenderer.invoke('app:fixGpu'),
   screenSourceId: () => ipcRenderer.invoke('capture:sourceId'),
   useAddress: (address) => ipcRenderer.invoke('qr:use', address),
   relaunchAsAdmin: () => ipcRenderer.invoke('app:relaunchAdmin'),

@@ -1,7 +1,7 @@
 {
   "name": "host",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "PC host for Phone Controller",
   "main": "out/main/index.js",
   "scripts": {
@@ -45,7 +45,7 @@
     ],
     "win": {
       "target": "nsis",
-      "requestedExecutionLevel": "requireAdministrator"
+      "requestedExecutionLevel": "asInvoker"
     },
     "electronVersion": "45.3.2",
     "directories": {

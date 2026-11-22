@@ -31,6 +31,8 @@ export interface HostState {
   inputAvailable: boolean;
   isAdmin: boolean;
   captureMode: CaptureMode;
+  /** This app's Windows GPU preference ('high' can break screen capture on laptops). */
+  gpuPref: 'unset' | 'auto' | 'saving' | 'high' | 'unknown';
   /** Windows Firewall rule added (null = not checked / not Windows). */
   firewallOk: boolean | null;
   /** Last status / error message reported by the phone. */
@@ -57,6 +59,8 @@ export interface HostApi {
   copy(text: string): Promise<void>;
   /** Save a new capture mode and restart the app so it takes effect. */
   restartWithCaptureMode(mode: CaptureMode): Promise<void>;
+  /** Set this app to the power-saving GPU and restart. Resolves false if it couldn't. */
+  fixGpu(): Promise<boolean>;
   /** desktopCapturer source id of the monitor chosen in settings (fallback capture). */
   screenSourceId(): Promise<string | null>;
   /** Put this address in the QR code (e.g. a Tailscale 100.x address). */

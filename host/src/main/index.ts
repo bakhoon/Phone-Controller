@@ -8,6 +8,7 @@ import { ControllerServer } from './server';
 import { lanAddresses } from './network';
 import { ensureFirewallRule } from './firewall';
 import { relaunchAsAdmin } from './elevate';
+import { readGpuPref, setPowerSavingGpu } from './gpu';
 import { loadLayouts, loadSettings, saveLayouts, saveSettings, type LayoutStore, type Settings } from './store';
 import type { HostState } from '../preload/api';
 
@@ -45,6 +46,7 @@ const state: HostState = {
   inputAvailable: input.available,
   isAdmin: false,
   captureMode: settings.captureMode,
+  gpuPref: 'unknown',
   firewallOk: null,
   phoneLog: null,
   platform: process.platform
@@ -163,6 +165,16 @@ function registerIpc(): void {
     await startServer();
   });
   ipcMain.handle('clipboard:write', (_e, text: string) => clipboard.writeText(text));
+  ipcMain.handle('app:fixGpu', async () => {
+    const ok = await setPowerSavingGpu();
+    if (!ok) return false;
+    settings = { ...settings, captureMode: 'auto' };
+    saveSettings(settings);
+    await server.stop();
+    app.relaunch();
+    app.exit(0);
+    return true;
+  });
   ipcMain.handle('app:restartCapture', async (_e, mode: Settings['captureMode']) => {
     settings = { ...settings, captureMode: mode };
     saveSettings(settings);
@@ -228,6 +240,7 @@ app.whenReady().then(async () => {
   registerIpc();
   createWindow();
   await checkAdmin();
+  state.gpuPref = await readGpuPref();
   await startServer();
 });
 
